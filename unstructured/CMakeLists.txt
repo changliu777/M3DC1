@@ -120,6 +120,7 @@ set(SOURCES
     init_vmec.f90
     transport.f90
     auxiliary_fields.f90
+    runaway_advection.f90
     time_step_split.f90
     time_step_unsplit.f90
     hdf5_output.f90
@@ -275,6 +276,8 @@ find_package(Zoltan)
 #find_package(PARMETIS)
 #find_package(METIS)
 
+find_package(ZLIB)
+message(STATUS "ZLIB found: ${ZLIB_LIBRARIES}")
 find_package(HDF5 REQUIRED COMPONENTS Fortran HL)
 message(STATUS "HDF5 found: ${HDF5_HL_LIBRARIES}")
 if (HDF5_HL_LIBRARIES MATCHES "libhdf5_hl_fortran\.a")
@@ -305,6 +308,10 @@ message(STATUS "Found NetCDF-Fortran ${NETCDF-Fortran_VERSION}")
 # find_package(FFTW REQUIRED)
 
 find_package(MPI REQUIRED)
+get_property(MPI_LINK_LIBRARIES TARGET MPI::MPI_Fortran PROPERTY INTERFACE_LINK_LIBRARIES)
+list(FILTER MPI_LINK_LIBRARIES EXCLUDE REGEX "libcuda\.so")
+set_property(TARGET MPI::MPI_Fortran PROPERTY
+  INTERFACE_LINK_LIBRARIES "${MPI_LINK_LIBRARIES}")
 
 set(M3DC1_SCOREC_LIB_NAME m3dc1_scorec)
 if(ENABLE_3D)

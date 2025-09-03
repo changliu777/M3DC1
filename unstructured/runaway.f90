@@ -274,9 +274,9 @@ contains
     n_ion = nt79(:,OP_1)*n0_norm*1e6 ! Ion density [per cubic m]
     kp_den = 0.0 * n_ion ! Impurity density [per cubic m]
     IF(ikprad.ne.0) THEN
-	call calculate_kprad_totden(itri, kp_den)
-        !kp_den = kp_den*n0_norm*1e6
-	kp_den = kprad_fz*nt79(:,OP_1)*n0_norm*1e6
+        call calculate_kprad_totden(itri, kp_den)
+        kp_den = kp_den*n0_norm*1e6
+	!kp_den = kprad_fz*nt79(:,OP_1)*n0_norm*1e6
 	END IF
     
     ! Call RE subroutine

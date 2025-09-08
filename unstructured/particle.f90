@@ -631,7 +631,7 @@ subroutine init_particles(lrestart, ierr)
       - dot_product(elfieldcoefs(itri)%zst,geomterms%dr)*dot_product(elfieldcoefs(itri)%rst,geomterms%dz))
 #endif
 
-   if (fast_ion_dist.eq.0) then
+   if ((kinetic_fast_ion.eq.1).and.(fast_ion_dist.eq.0)) then
       num_energy=0
       call read_ascii_column('ep_energy_array', energy_array, num_energy, icol=1)
         !energy_array=energy_array*1.7
@@ -961,7 +961,7 @@ subroutine init_particles(lrestart, ierr)
 
    end if !!lrestart
 
-   if (fast_ion_dist.eq.0) then
+   if ((kinetic_fast_ion.eq.1).and.(fast_ion_dist.eq.0)) then
       if (energy_array(1).eq.0) energy_array=energy_array+0.1*(energy_array(2)-energy_array(1))
       do energy_i=1,num_energy
          f_array(energy_i,:,:)=f_array(energy_i,:,:)/sqrt(energy_array(energy_i)/energy_array(num_energy))
@@ -986,7 +986,7 @@ subroutine init_particles(lrestart, ierr)
 !$acc update device(particle_linear_particle,psi_axis,nf_axis,nfi_axis,toroidal_period_particle)
 !$acc update device(gyroaverage_particle,psubsteps_particle,iconst_f0_particle,kinetic_rhomax_particle)
 !$acc update device(kinetic_thermal_ion_particle,fast_ion_dist_particle,fast_ion_max_energy_particle)
-      if (fast_ion_dist.eq.0) then
+      if ((kinetic_fast_ion.eq.1).and.(fast_ion_dist.eq.0)) then
 !$acc update device(num_energy,num_pitch,num_r) async(blocky)
 !$acc enter data create(energy_array,pitch_array,r_array,f_array) async(blocky)
 !$acc update device(energy_array,pitch_array,r_array,f_array) async(blocky)
@@ -1103,14 +1103,14 @@ subroutine advance_particles(tinc)
          !call rk4(pdata(ielm)%ion(ipart), tinc, itri, ierr)
          call rk4(pdata(ipart), tinc, istep .eq. psubsteps_particle, ierr)
          if (ierr .eq. 1) then ! Particle exited local+ghost domain -> lost
-            !pdata(ipart)%deleted = .true.
-            pdata(ipart)%x = pdata(ipart)%x0
-            pdata(ipart)%v = pdata(ipart)%v0
-            pdata(ipart)%wt = 0.
-            call mesh_search(pdata(ipart)%jel, pdata(ipart)%x, itri)
-            pdata(ipart)%jel = itri
-            pdata(ipart)%kel(:) = itri
-            cycle !Break out of tinc loop, go to next particle.
+            pdata(ipart)%deleted = .true.
+            !pdata(ipart)%x = pdata(ipart)%x0
+            !pdata(ipart)%v = pdata(ipart)%v0
+            !pdata(ipart)%wt = 0.
+            !call mesh_search(pdata(ipart)%jel, pdata(ipart)%x, itri)
+            !pdata(ipart)%jel = itri
+            !pdata(ipart)%kel(:) = itri
+            !cycle !Break out of tinc loop, go to next particle.
          end if
       end do!ielm
 #ifndef _OPENACC
@@ -1269,28 +1269,28 @@ subroutine rk4(part, dt, last_step, ierr)
    part%B0 = 1./B0inv ! fluid particle
    part%jel = itri
 
-    call evalf0(part%x, part%v(1), sqrt(2.0*qm_ion(part%sps)*part%v(2)/B0inv), elfieldcoefs(itri), geomterms, part%sps, f0, gradcoef, df0de, df0dxi)
-    !call evalf0(part%x, part%v(1), sqrt(2.0*qm_ion(part%sps)*part%v(2)*part%B0), elfieldcoefs(itri), geomterms, part%sps, f0, gradcoef, df0de, df0dxi) ! fluid particle
-    if (part%f0/f0>10) then
-       !if (floor(mod(part%x(1)*100000,500.0))==0) then
-          write(0,*) "33333333333333333333",part%f0/f0
-          part%x=part%x0
-          part%v=part%v0
-          part%wt=0.
-          call mesh_search(part%jel, part%x, itri)
-          part%jel=itri
-          part%kel(:)=itri
-          !endif
-    endif
-    if (f0/part%f0>10) then
-       part%x=part%x0
-       part%v=part%v0
-       part%wt=0.
-       call mesh_search(part%jel, part%x, itri)
-       part%jel=itri
-       part%kel(:)=itri
-       write(0,*) "55555555555555",part%f0/f0
-    endif
+    !call evalf0(part%x, part%v(1), sqrt(2.0*qm_ion(part%sps)*part%v(2)/B0inv), elfieldcoefs(itri), geomterms, part%sps, f0, gradcoef, df0de, df0dxi)
+    !!call evalf0(part%x, part%v(1), sqrt(2.0*qm_ion(part%sps)*part%v(2)*part%B0), elfieldcoefs(itri), geomterms, part%sps, f0, gradcoef, df0de, df0dxi) ! fluid particle
+    !if (part%f0/f0>10) then
+    !   !if (floor(mod(part%x(1)*100000,500.0))==0) then
+    !      write(0,*) "33333333333333333333",part%f0/f0
+    !      part%x=part%x0
+    !      part%v=part%v0
+    !      part%wt=0.
+    !      call mesh_search(part%jel, part%x, itri)
+    !      part%jel=itri
+    !      part%kel(:)=itri
+    !      !endif
+    !endif
+    !if (f0/part%f0>10) then
+    !   part%x=part%x0
+    !   part%v=part%v0
+    !   part%wt=0.
+    !   call mesh_search(part%jel, part%x, itri)
+    !   part%jel=itri
+    !   part%kel(:)=itri
+    !   write(0,*) "55555555555555",part%f0/f0
+    !endif
    endif
 end subroutine rk4
 
@@ -3010,11 +3010,6 @@ subroutine evalf0(x, vpar, vperp, fh, gh, sps, f0, gradcoef, df0de, df0dxi)
          f0=f0*T0**(-1.5)*exp(-m_ion(sps)*spd**2/(2*T0*1.6e-19))
          df0de = -1./(T0*1.6e-19)
          df0dxi = 0.
-         if (real(dot_product(fh%rho, gh%g))>kinetic_rhomax_particle) then
-            gradf=0.
-            df0de=0.
-            df0dxi=0.
-         endif
       elseif (fast_ion_dist_particle.eq.2) then
          !slowingdown
          gradf=gradf-3./(spd**3 + (2*T0*1.6e-19/m_ion(sps))**(1.5))*(2*T0*1.6e-19/m_ion(sps))**(0.5)/m_ion(2)*1.6e-19*gradT
@@ -3131,6 +3126,12 @@ subroutine evalf0(x, vpar, vperp, fh, gh, sps, f0, gradcoef, df0de, df0dxi)
       !gradcoef = 0.0
       df0de = 0.0
    end select
+   if (real(dot_product(fh%rho, gh%g))>kinetic_rhomax_particle) then
+      gradf=0.
+      df0de=0.
+      df0dxi=0.
+   endif
+
 end subroutine evalf0
 !---------------------------------------------------------------------------
 subroutine particle_pressure_rhs
@@ -3290,6 +3291,7 @@ subroutine particle_pressure_rhs
                phfac = exp(-rfac*xtemp(2))
             end if
             coeffspai_local(:, itri) = coeffspai_local(:, itri) + ppar*phfac*wnuhere/4*2
+            !coeffspai_local(:,itri) = coeffspai_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             coeffspei_local(:, itri) = coeffspei_local(:, itri) + pperp*phfac*wnuhere2/4*2
             !coeffspei_local(:,itri) = coeffspei_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             coeffsdei_local(:, itri) = coeffsdei_local(:, itri) + phfac*wnuhere/4&
@@ -3322,9 +3324,9 @@ subroutine particle_pressure_rhs
                phfac = exp(-rfac*xtemp(2))
             end if
             coeffspaf_local(:, itri) = coeffspaf_local(:, itri) + ppar*phfac*wnuhere/4*2
-             !coeffspaf_local(:,itri) = coeffspaf_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            !coeffspaf_local(:,itri) = coeffspaf_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             coeffspef_local(:, itri) = coeffspef_local(:, itri) + pperp*phfac*wnuhere2/4*2
-             !coeffspef_local(:,itri) = coeffspef_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            !coeffspef_local(:,itri) = coeffspef_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             coeffsdef_local(:, itri) = coeffsdef_local(:, itri) + phfac*wnuhere/4&
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)*2
             coeffsvpf_local(:,itri) = coeffsvpf_local(:,itri) + vpar/(v0_norm/100.)*phfac*wnuhere/4&
@@ -3476,6 +3478,12 @@ subroutine hdf5_write_particles(ierr)
    integer(HSSIZE_T), dimension(2) :: off_h5
    integer :: info
    integer ielm, poffset, pindex, np, ipart, size
+   real, dimension(3) :: xtemp
+   real, dimension(vspdims) :: vtemp
+   real :: spsq
+   type(xgeomterms)   :: geomterms
+   integer :: itri
+
    !Calculate data size
    call MPI_Bcast(nparticles, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
 
@@ -3622,7 +3630,18 @@ subroutine hdf5_write_particles(ierr)
          values(12, ipart) = pdata(pindex)%x0(3)
          values(13, ipart) = pdata(pindex)%v0(1)
          values(14, ipart) = pdata(pindex)%v0(2)
-      end do !ipart
+         xtemp = pdata(pindex)%x
+         vtemp = pdata(pindex)%v
+         itri = pdata(pindex)%jel
+         call get_geom_terms(xtemp, itri, geomterms, .false., ierr)
+#ifdef USEST
+         call update_geom_terms_st(geomterms, elfieldcoefs(itri), .false.)
+#endif
+         spsq = vtemp(1)**2 + 2.0*qm_ion(pdata(pindex)%sps)*vtemp(2)*pdata(pindex)%B0
+         values(11, ipart) = dot_product(elfieldcoefs(itri)%rho, geomterms%g)
+         values(12, ipart) = vtemp(1)/sqrt(spsq)
+         values(13, ipart) = m_ion(pdata(pindex)%sps)*0.5*spsq
+     end do !ipart
 
       !Write the dataset
       call h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, values, global_dims, ierr, &
@@ -4203,12 +4222,17 @@ subroutine set_density
       !   -0.1*dt*n179(:,OP_1)*te079(:,OP_1)*2
       temp79a = n179(:,OP_1) + 0.9*(nfi79(:,OP_1)+nf79(:,OP_1)) &
         -0.9*n179(:,OP_1)
+      !where (real(rhof79(:,OP_1))>0.5)
+      !    !temp79a(:)=-temp79b(:)
+      !    temp79a(:)=n179(:,OP_1)
+      ! end where
+
       !temp79a = n179(:,OP_1) + 0.9*(nfi79(:,OP_1))&
       !          -0.5*n179(:,OP_1)
       !temp79a = n179(:,OP_1)
-       where (real(temp79a(:)+n079(:,OP_1))<0.07)
+       where (real(temp79a(:)+n079(:,OP_1))<0.035)
       !   ! temp79a(:)=p179(:,OP_1)
-          temp79a(:)=0.15-n079(:,OP_1)
+          temp79a(:)=0.035-n079(:,OP_1)
       !   !temp79a(:)=0
       end where
       !temp79a(:)=0.
@@ -4221,8 +4245,13 @@ subroutine set_density
   den_field(1) = p_v
   call destroy_field(p_v)
   call calculate_ne(1, den_field(1), ne_field(1), eqsubtract)
-  call calculate_pressures(1, pe_field(1), p_field(1), ne_field(1), &
-       den_field(1), te_field(1), ti_field(1), eqsubtract)
+  if(itemp.eq.0 .and. (numvar.eq.3 .or. ipres.gt.0)) then
+     call calculate_temperatures(1, te_field(1), ti_field(1), &
+          pe_field(1), p_field(1), ne_field(1), den_field(1), eqsubtract)
+  else
+     call calculate_pressures(1, pe_field(1), p_field(1), ne_field(1), &
+          den_field(1), te_field(1), ti_field(1), eqsubtract)
+  endif
 end subroutine set_density
 
 subroutine set_den_smooth

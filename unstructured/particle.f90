@@ -1507,11 +1507,15 @@ subroutine fdot(x, v, w, dxdt, dvdt, dwdt, dEpdt, itri, kel, f00, ierr, sps, B00
       call getBcylprime(x, elfieldcoefs(itri), geomterms, B0_cyl, deltaB, dB0dR, dB0dphi, dB0dz, dB1dR, dB1dphi, dB1dz)
          !call getBcyl_last(x, fhptr, geomterms, B_cyl2, deltaB_last)
       if (kinetic_thermal_ion_particle.eq.1) then
+         !temp(1) = dot_product(geomterms%dr, elfieldcoefs(itri)%pe)
+         !temp(3) = dot_product(geomterms%dz, elfieldcoefs(itri)%pe)
          temp(1) = dot_product(geomterms%dr, elfieldcoefs(itri)%ne)
          temp(3) = dot_product(geomterms%dz, elfieldcoefs(itri)%ne)
 #ifdef USECOMPLEX
+         !temp(2) = dot_product(geomterms%g, elfieldcoefs(itri)%pe)*rfac_particle/x(1)
          temp(2) = dot_product(geomterms%g, elfieldcoefs(itri)%ne)*rfac_particle/x(1)
 #elif defined(USE3D)
+         !temp(2) = Rinv*dot_product(geomterms%dphi, elfieldcoefs(itri)%pe)
          temp(2) = Rinv*dot_product(geomterms%dphi, elfieldcoefs(itri)%ne)
 #else
          temp(2) = 0.
@@ -1523,6 +1527,8 @@ subroutine fdot(x, v, w, dxdt, dvdt, dwdt, dEpdt, itri, kel, f00, ierr, sps, B00
 #endif
          gradpe=gradpe*dot_product(geomterms%g, elfieldcoefs(itri)%te0)
 
+         !temp(1) = dot_product(geomterms%dr, elfieldcoefs(itri)%pe0)
+         !temp(3) = dot_product(geomterms%dz, elfieldcoefs(itri)%pe0)
          temp(1) = dot_product(geomterms%dr, elfieldcoefs(itri)%ne0)
          temp(3) = dot_product(geomterms%dz, elfieldcoefs(itri)%ne0)
 #ifdef USEST
@@ -1530,6 +1536,7 @@ subroutine fdot(x, v, w, dxdt, dvdt, dwdt, dEpdt, itri, kel, f00, ierr, sps, B00
 #else
          temp(2) = 0.
 #endif
+         !j0xb=-dot_product(temp,deltaB)*B0inv
          j0xb=-dot_product(temp,deltaB)*B0inv*dot_product(geomterms%g, elfieldcoefs(itri)%te0)
          !if (real(dot_product(geomterms%g, fhptr%psiv0))<0.21) then
          !   gradpe=0.
@@ -2576,6 +2583,7 @@ subroutine get_field_coefs(eq)
          factor = 1*c_light/ &
                   sqrt(4.*3.14159*n0_norm*(z_ion*e_c)**2/m0_norm)/ &
                   l0_norm*(v0_norm/100.0*b0_norm/1.e4)
+         call calcavector(ielm, p_field(1), elfieldcoefs(ielm_global)%pe)
          call calcavector(ielm, densmooth_field, elfieldcoefs(ielm_global)%ne)
          !call calcavector(ielm, den_field(1), elfieldcoefs(ielm_global)%ne)
          elfieldcoefs(ielm_global)%pe=elfieldcoefs(ielm_global)%pe*factor
@@ -4277,6 +4285,7 @@ subroutine set_density
   !call newsolve(diff3_mat, p_v%vec, ierr)
   den_field(1) = p_v
   call destroy_field(p_v)
+
   call calculate_ne(1, den_field(1), ne_field(1), eqsubtract)
   if(itemp.eq.0 .and. (numvar.eq.3 .or. ipres.gt.0)) then
      call calculate_temperatures(1, te_field(1), ti_field(1), &
@@ -4318,10 +4327,13 @@ subroutine set_den_smooth
   do itri=1,local_elements()
      call define_element_quadrature(itri,int_pts_main,int_pts_tor)
      call define_fields(itri,FIELD_P+FIELD_TE+FIELD_KIN+FIELD_N+FIELD_NI,1,0)
+     temp79a = n179(:,OP_1) + 0.9*(nfi79(:,OP_1)+nf79(:,OP_1)) &
+        -0.9*n179(:,OP_1)
+
      !temp79a=(pipar79(:,OP_1)*0+piper79(:,OP_1)*3)/3.
      !temp79a=nfi79(:,OP_1)*te079(:,OP_1)*2
      !temp79a=nfi79(:,OP_1)*te079(:,OP_1)+p179(:,OP_1)-n179(:,OP_1)*te0
-     temp79a=n179(:,OP_1)
+     !temp79a=n179(:,OP_1)
      dofs = intx2(mu79(:,:,OP_1),temp79a)
      call vector_insert_block(p_v%vec,itri,1,dofs,VEC_ADD)
   end do

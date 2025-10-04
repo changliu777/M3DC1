@@ -1757,6 +1757,7 @@ subroutine validate_input
   p0_norm = b0_norm**2/(4.*pi)
   e0_norm = v0_norm*b0_norm / c_light
   j0_norm = c_light*b0_norm/(4.*pi*l0_norm)
+  !write(0,*) 'v0_norm',v0_norm/100
 
   ! For pure Hydrogen plasma
   ! nu_e = nufac * n_e / T_e^(3/2) 

@@ -47,6 +47,11 @@ all :
 	make a2cc
 	make bin
 
+.PHONY: pic
+pic :
+	make OPT=1 COM=1 PAR=1
+	make bin_pic
+
 .PHONY: cleanall
 cleanall : 
 	rm -fr _$(ARCH)*

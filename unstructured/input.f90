@@ -460,8 +460,6 @@ subroutine set_defaults
        "1: J_BS = alpha F <p,psi> B", model_grp)
   call add_var_double("bootstrap_alpha", bootstrap_alpha, 0., &
        "alpha parameter in bootstrap current model", model_grp)
-  call add_var_int("ibootstrap_map_te", ibootstrap_map_te, 0, &
-       "Mapping paramater for bootstrap coefficients 0=Psi_n, 1=Te", model_grp)   
   call add_var_double("ibootstrap_regular", ibootstrap_regular, 1e-8, &
        "Regularization parameter Default=1e-8", model_grp)     
   call add_var_int("kinetic", kinetic, 0, &
@@ -1759,6 +1757,7 @@ subroutine validate_input
   p0_norm = b0_norm**2/(4.*pi)
   e0_norm = v0_norm*b0_norm / c_light
   j0_norm = c_light*b0_norm/(4.*pi*l0_norm)
+  !write(0,*) 'v0_norm',v0_norm/100
 
   ! For pure Hydrogen plasma
   ! nu_e = nufac * n_e / T_e^(3/2) 

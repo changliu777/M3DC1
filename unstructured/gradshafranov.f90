@@ -1264,8 +1264,9 @@ endif
   error2 = 0.
   !-------------------------------------------------------------------
   ! start of iteration loop on plasma current
-  !gamma4=1.0
+  gamma4=1.0
   mainloop: do itnum=1, iabs(igs)
+  !mainloop: do itnum=1, 0
 
      if(myrank.eq.0) print *, "GS iteration = ", itnum, error2
      

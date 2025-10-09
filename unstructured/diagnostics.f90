@@ -2309,7 +2309,11 @@ subroutine calculate_rho(itri)
   integer, intent(in) :: itri
   integer :: i
 
+#ifdef USEPARTICLES
+  rho79 = n079
+#else
   rho79 = nt79
+#endif
 
   if(ikprad.ne.0) then 
      do i=1, kprad_z

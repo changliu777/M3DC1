@@ -1041,9 +1041,9 @@ subroutine init_particles(lrestart, ierr)
       call define_element_quadrature(itri, int_pts_main, int_pts_tor)
       call define_fields(itri, FIELD_PSI+FIELD_I+FIELD_B2I, 1, 0)
       tempxx = intxx2(mu79(:, :, OP_1), nu79(:, :, OP_1))
-      !tempxx = tempxx + smooth_pres*(intxx2(mu79(:, :, OP_DZZ), nu79(:, :, OP_DZZ)) + intxx2(mu79(:, :, OP_DRR), nu79(:, :, OP_DRR)))
+      !tempxx = tempxx + smooth_dens_parallel*(intxx2(mu79(:, :, OP_DZZ), nu79(:, :, OP_DZZ)) + intxx2(mu79(:, :, OP_DRR), nu79(:, :, OP_DRR)))
 !#ifdef USE3D
-      !tempxx = tempxx + smooth_pres*intxx3(mu79(:, :, OP_DPP), nu79(:, :, OP_DPP), ri4_79)
+!      tempxx = tempxx + smooth_dens_parallel*intxx3(mu79(:, :, OP_DPP), nu79(:, :, OP_DPP), ri4_79)
 !#endif
       tempxx = tempxx + smooth_dens_parallel*(&
             + intxx5(mu79(:,:,OP_DZ),nu79(:,:,OP_DZ),ri_79*pstx79(:,OP_DR)-&
@@ -1201,10 +1201,11 @@ subroutine rk4(part, dt, last_step, ierr)
    part%x = part%x + onethird*dt*(k2 + k3 + 0.5*(k1 + k4))
    part%v = part%v + onethird*dt*(l2 + l3 + 0.5*(l1 + l4))
    part%wt = part%wt + onethird*dt*(m2 + m3 + 0.5*(m1 + m4))
-   if ((.not. particle_linear_particle .eq. 1) .and. (part%wt < -10.)) then
+   if ((.not. particle_linear_particle .eq. 1) .and. (part%wt < -1.)) then
       part%wt = 0.
-      !ierr=1
-      !return
+   end if
+   if ((.not. particle_linear_particle .eq. 1) .and. (part%wt > 1.)) then
+      part%wt = 0.
    end if
    !if ((abs(part%wt) > 0.05)) then
    !   part%wt = 0.
@@ -1226,7 +1227,7 @@ subroutine rk4(part, dt, last_step, ierr)
    bhat = B_cyl*B0inv                         !Unit vector in b direction
    !write(0,*) part%gid
    !if (part%gid==2117425261) then
-   !if (abs(dot_product(elfieldcoefs(itri)%rho, geomterms%g))>kinetic_rhomax_particle) part%wt=0.
+   if (abs(dot_product(elfieldcoefs(itri)%rho, geomterms%g))>kinetic_rhomax_particle) part%wt=part%wt*0.9
    ! write(0,*) (abs(dot_product(elfieldcoefs(itri)%rho, geomterms%g)))
    !write(0,*) part%v(1)**2+2.*qm_ion*part%v(2)/B0inv, 1./B0inv, part%v(1), itri
    !if (part%x(2)<0) write(0,*) 'cc',dot_product(geomterms%g,elfieldcoefs(itri)%rst),dot_product(geomterms%g,elfieldcoefs(itri)%zst)
@@ -1697,6 +1698,7 @@ subroutine fdot(x, v, w, dxdt, dvdt, dwdt, dEpdt, itri, kel, f00, ierr, sps, B00
 
    ne0 = dot_product(geomterms%g, elfieldcoefs(itri)%ne0)
 
+   !if ((kinetic_thermal_ion_particle.eq.1).and.(abs(dot_product(geomterms%g, elfieldcoefs(itri)%tfi))>0)) dEdt = dEdt + 1*q_ion(sps)*v(1)*(dot_product(-gradpe,bhat0)+j0xb)/ne0
    if (kinetic_thermal_ion_particle.eq.1) dEdt = dEdt + 1*q_ion(sps)*v(1)*(dot_product(-gradpe,bhat0)+j0xb)/ne0
 
    ! tmp1=dot_product(-gradpe,bhat)+j0xb
@@ -1791,7 +1793,7 @@ subroutine fdot(x, v, w, dxdt, dvdt, dwdt, dEpdt, itri, kel, f00, ierr, sps, B00
    !dwdt = dwdt * (f00-w)
    !endif
    if (particle_linear_particle .eq. 0) then
-      dwdt = dwdt*(1 - w)
+      !dwdt = dwdt*(1 - w)
       !dEpdt = dEpdt *(w+(1-w)*dot_product(deltaB,bhat)*B0inv)
       !dvdt(1) = dvdt(1)+qm_ion*(dot_product(-gradpe,bhat)+j0xb)/ne0
    else
@@ -3167,11 +3169,11 @@ subroutine evalf0(x, vpar, vperp, fh, gh, sps, f0, gradcoef, df0de, df0dxi)
       !gradcoef = 0.0
       df0de = 0.0
    end select
-   if (real(dot_product(fh%rho, gh%g))>kinetic_rhomax_particle) then
-      gradf=0.
-      df0de=0.
-      df0dxi=0.
-   endif
+   !if (real(dot_product(fh%rho, gh%g))>kinetic_rhomax_particle) then
+   !   gradf=0.
+   !   df0de=0.
+   !   df0dxi=0.
+   !endif
 
 end subroutine evalf0
 !---------------------------------------------------------------------------

@@ -223,6 +223,8 @@ subroutine rmp_field(n, nt, np, x, phi, z, br, bphi, bz, p)
   real, dimension(n) :: tilt_co, tilt_sn
   real, dimension(n) :: shift_co, shift_sn
 #endif
+  real :: Z_remc, R_remc
+  complex :: I_remc, I_remc1, I_remc2
 
   br = 0.
   bphi = 0.
@@ -312,6 +314,59 @@ subroutine rmp_field(n, nt, np, x, phi, z, br, bphi, bz, p)
         bz = -real(brv)*sin(theta) - real(bthetav)*cos(theta)
 #endif
      end if
+     
+     !!!!!! RiD: SPARC REMC !!!!!
+     case(3)
+		 fr   = 0.    ! B_R
+		 fphi = 0.    ! B_phi
+		 fz   = 0.    ! B_Z
+		 
+		 I_remc = 1.0 * ic_na(1) ! REMC Current and position
+		 Z_remc = 1.0 * zc_na(1)
+		 R_remc = 1.0 * xc_na(1)
+		 
+!~ 		 if(myrank.eq.0) print *, 'RMP Case (REMC) = ', irmp
+!~ 		 if(myrank.eq.0) print *, 'I_remc, R_remc, R_remc = ', &
+!~ 		  I_remc, R_remc, Z_remc
+!~ 		 if(myrank.eq.0) print *, 'n, np, nt, = ', n, np, nt 
+		 
+             
+        do i=1, nt
+        
+			fr   = 0.    ! B_R
+			fphi = 0.    ! B_phi
+			fz   = 0.    ! B_Z
+			
+			! *tanh((phi((i-1)*np+1)-3.141)/0.5)
+			! Z_remc = cos(phi((i-1)*np+1)) * zc_na(1)
+			if (phi((i-1)*np+1).lt.twopi/2) then
+				Z_remc = -1.0 * zc_na(1)
+			else
+				Z_remc = 1.0 * zc_na(1)
+			end if
+        
+!~ 			call pane(I_remc,R_remc,R_remc,&
+!~ 			Z_remc,&
+!~ 			zc_na(2),np,x,z,ntor,fr,fphi,fz) ! RiD: Calculating B-field
+
+			call coil(I_remc,R_remc,Z_remc,&
+			np,x,z,0,fr,fphi,fz) ! RiD: Calculating B-field
+			
+			
+!~ 			if(myrank.eq.1) print *, &
+!~ 			'Z_remc, phi = ', Z_remc,&
+!~ 			 phi((i-1)*np+1)
+        
+			br((i-1)*np+1:i*np) = real(fr(1:np))
+			bphi((i-1)*np+1:i*np) = real(fphi(1:np))
+			bz((i-1)*np+1:i*np) = real(fz(1:np))
+		 end do
+
+
+		 br = -twopi*br
+		 bphi = -twopi*bphi
+		 bz = -twopi*bz
+		 if(present(p)) p = 0. 
 
   case default
      if(myrank.eq.0) print *, 'Error: Option not recognized: irmp = ', irmp
@@ -445,7 +500,7 @@ subroutine calculate_external_fields(ilin)
      il = ilin
   end if
 
-  if(irmp.eq.1) then
+  if ((irmp .eq. 1) .or. (irmp .eq. 3)) then
      call load_coils(xc_na, zc_na, ic_na, nc_na, &
           'rmp_coil.dat', 'rmp_current.dat')
   end if

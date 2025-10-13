@@ -27,6 +27,14 @@
        module use $M3DC1_CODE_DIR/unstructured/modules/flux
        module load m3dc1/devel
 
+       or 
+       module load intel/2023.2.0
+       module load openmpi/4.1.6-intel-2023.2.0
+       module load openmpi-4.1.6/intel-2023.2.0/netcdf-c/main-nzscm
+       module load openmpi-4.1.6/intel-2023.2.0/netcdf-fortran/4.6.1-cepgo
+       module load simmodsuite/2025.0-250217-dev
+       module load netlib-lapack/3.11.0-intel-2023.2.0-pf3ms
+
 4. compile code
 
    2D real: make OPT=1 RL=1 MAX_PTS=25 ARCH=flux

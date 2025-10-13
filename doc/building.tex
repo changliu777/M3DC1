@@ -1,27 +1,5 @@
 \section{Obtaining M3D-C1}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{License Agreement}
-\label{sec:license}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-M3D-C1 is a code developed with funding from the US Department of
-Energy, and is intended for open scientific research.  If you intend
-to run M3D-C1, please complete the following steps:
-
-\begin{enumerate}
-\item Sign the license agreement
-  \url{https://m3dc1.pppl.gov/M3D-C1\_License.pdf} and return to
-  \href{mailto:nferraro@pppl.gov}{nferraro@pppl.gov}.
-\item Request access to the code using the form
-  \url{https://pppl.tiny.us/code-release-form}.  This step will
-  involve review by PPPL to clear any potential export control issues.
-\end{enumerate}
-
-Please be aware that permission to run M3D-C1 does not carry an
-implicit agreement to provide technical support for compiling,
-running, modifying, or interpreting output of, M3D-C1.
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Preinstalled M3D-C1 Executables}
@@ -33,36 +11,21 @@ Installations are presently available on a number of systems,
 including:
 
 \begin{description}
-\item{GA Iris}:\\
-  \texttt{module use /fusion/projects/codes/m3dc1/modules}\\
-  \texttt{module load m3dc1/1.14}
 \item{NERSC Perlmutter}:\\
   \texttt{module use /global/cfs/projectdirs/mp288/C1/modules/perlmutter}\\
-  \texttt{module load m3dc1/1.14-cpu}
-\item{PPPL Cluster}:\\
+  \texttt{module load m3dc1/1.15-cpu}
+\item{PPPL Flux}:\\
   \texttt{module use /p/m3dc1/modules}\\
-  \texttt{module load m3dc1/1.14}
+  \texttt{module load m3dc1/1.15}
 \item{PU Stellar}:\\
   \texttt{module use /projects/M3DC1/modules}\\
-  \texttt{module load m3dc1/1.14}
+  \texttt{module load m3dc1/1.15}
 \end{description}
 
 These modules will modify the user's enviroment variables
 appropriately to access the M3D-C1 executables, python libraries, and
 IDL routines.
 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Accessing the M3D-C1 Source Code}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-If you choose to build the code yourself, either to use an unreleased
-version or to do code development yourself, you will need access to
-the M3D-C1 code repository.  The M3D-C1 source code is located in the
-Github repository: \texttt{PrincetonUniversity/M3DC1}. To get access
-to this repository, please complete the license form and software
-access request form as described in section~\ref{sec:license}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,9 +55,9 @@ for building on that particular system, and can be loaded using:
 \item{NERSC Perlmutter}:\\
   \texttt{module use \$M3DC1\_DIR/modules/perlmutter}\\
   \texttt{module load m3dc1/devel}
-\item{PPPL Cluster}:\\
+\item{PPPL Flux}:\\
   \texttt{module use \$M3DC1\_DIR/modules/pppl}\\
-  \texttt{module load m3dc1/devel-centos7}
+  \texttt{module load m3dc1/devel}
 \item{PU Stellar}:\\
   \texttt{module use \$M3DC1\_DIR/modules/stellar}\\
   \texttt{module load m3dc1/devel}
@@ -155,6 +118,7 @@ should be run before commiting any new code to the repository.  To run
 these tests:
 
 \texttt{cd \$M3DC1\_DIR/unstructured/regtest}
+
 \texttt{./run <arch> <test>}
 
 where \texttt{<arch>} and \texttt{<test>} are optional arguments

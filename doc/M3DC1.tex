@@ -39,6 +39,9 @@
 %\usepackage{amssymb}
 %\usepackage{graphicx}
 %\usepackage[usenames]{color}
+
+\usepackage[backend=biber]{biblatex}
+\addbibresource{m3dc1.bib}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \title{The M3D-C1 User's Guide}
 
@@ -58,28 +61,32 @@ RPI SCOREC}
 
 \include{building}
 
-\include{github}
+\include{tutorials}
 
-\include{equilibria}
+%\include{github}
+
+%\include{equilibria}
 
 \include{mesh-gen}
 
 \include{mesh-adapt}
-\include{numerical-methods}
-
-\include{output}
-
-\include{petsc_option}
 
 \include{running_jobs}
 
+\include{petsc_option}
+
+\include{output}
+
 \include{physics-model}
+
+\include{numerical-methods}
 
 \include{doc}
 
 % Bibliography
-\bibliographystyle{plain}
-\bibliography{m3dc1}
+%\bibliographystyle{plain}
+%\bibliography{m3dc1}
+\printbibliography
 
 \appendix
 \include{idl-postproc}

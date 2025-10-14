@@ -1,5 +1,5 @@
 \section{SCOREC API}
-This appendix chapter should document all SCOREC/ITAPS functions called from M3D-C$^1$. 
+This appendix chapter should document all SCOREC/ITAPS functions called from M3D-C1. 
 In this document the term process is used instead of processor since multiple processes
 may be run on a single processor.  Currently it is assumed that there is
 one partition per process.  In Fortran, the standard convention
@@ -163,8 +163,8 @@ This function returns the global number of DOFs \textit{numglobaldofs} for numbe
 
 \end{itemize}
 \subsection{Vector Interface}
-It is the responsibility of M3D-C$^1$ to allocate and deallocate memory for vectors.  The \textit{space}
-subroutine in M3D-C$^1$ is used for allocating and deallocating all vectors of DOFs of fields
+It is the responsibility of M3D-C1 to allocate and deallocate memory for vectors.  The \textit{space}
+subroutine in M3D-C1 is used for allocating and deallocating all vectors of DOFs of fields
 that are to be transferred during mesh adaptation.  This is used as a ``callback'' function to 
 manage the memory of these arrays.  The proper amount of memory to be allocated for each vector
 is obtained by using the \textit{numdofs} function for the same numbering id that is used
@@ -180,7 +180,7 @@ Determining if they are actual double precision numbers (8 bytes) or complex dou
 for \textit{vectorid}
  for numbering \textit{orderingid}. If the vector is for a real-valued array \textit{type}
 should be set to 0 and if the vector is for  a complex-valued array \textit{type} should be set to 1. 
-\item   void deleteppplvec(double */complex * vectorid); This function deletes the vector but it is M3D-C$^1$'s 
+\item   void deleteppplvec(double */complex * vectorid); This function deletes the vector but it is M3D-C1's 
 responsibility to deallocate the memory used for the array.
 \item   void sumsharedppplvecvals(double */complex * vectorid);  This function assumes that the values inserted into the
 array of the vector has only local contributions on each process and then this sums the parts
@@ -195,7 +195,7 @@ has the correct value and that other processes that need the DOF may or may not 
 this assumption, this function can be called to update the correct values for a DOF on processes
 that need the DOF but do not own it.  This is used primarily for distributing the DOF values after a matrix solve
 from the process it was solved for on to the other processes that use the DOF.  This function might not be useful
-for M3D-C$^1$ but is documented anyways.
+for M3D-C1 but is documented anyways.
 \item   void checkppplveccreated(double */complex * vectorid, int * iscreated); This function checks whether a vector \textit{vectorid} 
 has already been created or not.  It returns 0 if it has not and 1 if it has been created but does no
 action otherwise.  
@@ -269,7 +269,7 @@ ordering.
 of \textit{matrixid} to a file that uses \textit{fileid} to indicate which file.
 \end{itemize}
 For the PETSc solver, the following two functions are defined in \textit{PETScInterface.c} and are designed
-to give M3D-C$^1$ the ability to modify the PETSc solver parameters for a given \textit{matrixid}.  
+to give M3D-C1 the ability to modify the PETSc solver parameters for a given \textit{matrixid}.  
 The FortranMatrixID enumeration must match the parameters specified in the sparse module in \textit{M3Dmodules.f90}.
 \begin{itemize}
 \item  int setPETScMat(int matrixid, Mat * A);  This function can be used to set options for storing \textit{matrix}
@@ -278,23 +278,23 @@ in PETSc data structures.
 parameters for \textit{matrixid} in PETSc.
 \end{itemize}
 
-\subsection{Creating Meshes for M3D-C$^1$}
-There are a couple of ways to create meshes for M3D-C$^1$ simulations.  
+\subsection{Creating Meshes for M3D-C1}
+There are a couple of ways to create meshes for M3D-C1 simulations.  
 
 The first procedure for generating an initial mesh is using the 
 structMesh.cc code in 
-M3D-C$^1$ in the Util subdirectory (i.e. M3D/Util/structMesh.cc).  This code
+M3D-C1 in the Util subdirectory (i.e. M3D/Util/structMesh.cc).  This code
  creates a 2D structured mesh that can be used with FMDB.  Compilation is done with
  \textit{$<$C++ compiler$>$ -o structMesh.x structMesh.cc} and the input for the code is
 \textit{./structMesh.x $<$number of nodes in the x-direction$>$ $<$number of nodes in the z-direction$>$ 
 $<$x-length or rectangular domain$>$ $<$z-length of rectangular domain$>$}
 Note that the domain is 0 $<$= x $<$= x-length or rectangular domain , 0 $<$= z $<$= z-length of rectangular domain.
 After running structMesh.x, the output will be a file called struct.sms.  To be
-able to use this with M3D-C$^1$, this file must be processed by running the program
+able to use this with M3D-C1, this file must be processed by running the program
 in \textit{$<$SCOREC SOFTWARE PATH$>$/mctk/Examples/PPPL/PPPL/test/DISCRETE/main} with the argument struct.sms 
 (e.g. $<$SCOREC SOFTWARE PATH$>$/mctk/Examples/PPPL/PPPL/test/DISCRETE/main struct.sms)
 which will output a struct-dmg.sms and struct.dmg file which can be used to
-run M3D-C$^{1}$.
+run M3D-C1.
 
 The second procedure for generating an initial mesh is to use the Simmetrix (www.simmetrix.com)
 mesh generation tools.  Some code already exists at SCOREC for creating meshes for PPPL 
@@ -315,7 +315,7 @@ and the output is a mesh in both Simmetrix file format (*\_SimModS.sms) and
 FMDB file format (*\_FMDB.sms).  The FMDB file format must then be processed as the struct.sms file
 for the structured mesh generation tool above to create the struct.dmg and struct-dmg.sms files.
 
-The third procedure for creating an adapted mesh from an M3D-C$^1$ run is to use the 
+The third procedure for creating an adapted mesh from an M3D-C1 run is to use the 
 \textit{hessianadapt} function in the SCOREC software.  The function parameters in C/C++ are:\\
 \textit{void hessianadapt(double */complex * ppplvector, int * which, int * type, int * ntime, double * factor, double * hmin, double * hmax);}\\
 Here, \textit{ppplvector} is a pointer to an array of double precisions or complex double precisions
@@ -331,17 +331,17 @@ and \textit{hmax} is the desired maximum edge length in the adapted mesh.  Note 
 minimum and maximum desired edges lengths may be smaller and larger, respectively, than the
 desired values.  The \textit{factor, hmin,} and \textit{hmax} parameters are the same as the ones
 used in Ken Jansen's phAdapt software.  This adaptation procedure only works with single process
-runs of M3D-C$^1$ and the adapted mesh is classified on the same model (struct.dmg) 
+runs of M3D-C1 and the adapted mesh is classified on the same model (struct.dmg) 
 as the pre-adapted mesh.  During mesh adaptation, all fields that exist as PPPLVectors are transferred
-using interpolation during local mesh modifications.  These values are then passed back to M3D-C$^1$ by
-resizing the arrays of DOFs that M3D-C$^1$ uses and then setting the DOF values for these arrays.  
-The resizing of the DOF arrays will be done in the /textit{space} subroutine in M3D-C$^1$.
+using interpolation during local mesh modifications.  These values are then passed back to M3D-C1 by
+resizing the arrays of DOFs that M3D-C1 uses and then setting the DOF values for these arrays.  
+The resizing of the DOF arrays will be done in the /textit{space} subroutine in M3D-C1.
 
 
-% appendix on modules that are used on different machines that M3D-C$^{1}$ is installed on
+% appendix on modules that are used on different machines that M3D-C1 is installed on
 \subsubsection{Module use on different machines}
 This appendix is meant to make sure that people do not have trouble determining which modules to use on 
-which machines.  Note that this list may include modules that are not necessary for M3D-C$^1$.
+which machines.  Note that this list may include modules that are not necessary for M3D-C1.
 
 \subsubsection{viz/m3d.pppl.gov}
 The modules that I (Andy Bauer) have loaded on viz and m3d are  

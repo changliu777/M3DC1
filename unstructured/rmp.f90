@@ -2,6 +2,7 @@ module rmp
 
   use coils
   use read_schaffer_field
+  use diagnostics ! Required for plasma current (totcur)
 
   implicit none
 
@@ -27,6 +28,7 @@ subroutine rmp_per(ilin)
   use coils
   use boundary_conditions
   use read_schaffer_field
+  use diagnostics ! Required for plasma current (totcur
 
   implicit none
 
@@ -194,6 +196,7 @@ subroutine rmp_field(n, nt, np, x, phi, z, br, bphi, bz, p)
   use basic
   use coils
   use gradshafranov
+  use diagnostics ! Required for plasma current (totcur
 
   implicit none
 
@@ -223,7 +226,7 @@ subroutine rmp_field(n, nt, np, x, phi, z, br, bphi, bz, p)
   real, dimension(n) :: tilt_co, tilt_sn
   real, dimension(n) :: shift_co, shift_sn
 #endif
-  real :: Z_remc, R_remc
+  real :: Z_remc, R_remc, remc_fac
   complex :: I_remc, I_remc1, I_remc2
 
   br = 0.
@@ -321,9 +324,21 @@ subroutine rmp_field(n, nt, np, x, phi, z, br, bphi, bz, p)
 		 fphi = 0.    ! B_phi
 		 fz   = 0.    ! B_Z
 		 
-		 I_remc = 1.0 * ic_na(1) ! REMC Current and position
+		 ! Calculate the REMC Current Scale Factor
+		 ! totcur is the plasma current in m3dc1 units
+		 ! init_current is defined in C1input in Amperes
+		 if (iScaleREMC.eq.1) then
+			remc_fac = 1.0 - abs(totcur)/(init_current * 1.0/795217.0)
+		 else
+			remc_fac = 1.0
+		 end if
+		 
+		 I_remc = remc_fac * ic_na(1) ! REMC Current [kA] and position
 		 Z_remc = 1.0 * zc_na(1)
 		 R_remc = 1.0 * xc_na(1)
+		 
+		 if(myrank.eq.0) print *, 'totcur (A) = ', (totcur*795217.0)
+		 if(myrank.eq.0) print *, 'I_remc (kA) = ', (I_remc)
 		 
 !~ 		 if(myrank.eq.0) print *, 'RMP Case (REMC) = ', irmp
 !~ 		 if(myrank.eq.0) print *, 'I_remc, R_remc, R_remc = ', &
@@ -351,11 +366,6 @@ subroutine rmp_field(n, nt, np, x, phi, z, br, bphi, bz, p)
 
 			call coil(I_remc,R_remc,Z_remc,&
 			np,x,z,0,fr,fphi,fz) ! RiD: Calculating B-field
-			
-			
-!~ 			if(myrank.eq.1) print *, &
-!~ 			'Z_remc, phi = ', Z_remc,&
-!~ 			 phi((i-1)*np+1)
         
 			br((i-1)*np+1:i*np) = real(fr(1:np))
 			bphi((i-1)*np+1:i*np) = real(fphi(1:np))
@@ -474,6 +484,7 @@ subroutine calculate_external_fields(ilin)
   use newvar_mod
   use boundary_conditions
   use gradshafranov
+  use diagnostics ! Required for plasma current (totcur
 
   implicit none
 
@@ -726,8 +737,13 @@ subroutine calculate_external_fields(ilin)
      call mult(bz_field(il), -1.)
   end if
   if(iflip_j.eq.1) then
-     call mult(psi_field(il), -1.)
-     call mult(bfp_field(il), -1.)
+	if (irmp.eq.3) ! RiD
+		call mult(psi_field(il), 1.)
+		call mult(bfp_field(il), 1.)
+	else
+		call mult(psi_field(il), -1.)
+		call mult(bfp_field(il), -1.)
+    end if
   end if
 
   call destroy_vector(psi_vec)

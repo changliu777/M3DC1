@@ -303,6 +303,8 @@ module basic
   integer :: iTritBeta ! Toggles Tritium Source
   integer :: iAvalanche ! Toggles Avalanche RE term
   integer :: iCompton ! Toggles Compton RE term
+  integer :: iScaleREMC ! If 1 scales the REMC current with plasma current
+  real :: init_current ! Current for REMC current scaling (irmp=3)
   integer :: iflip       ! 1 = flip handedness
   integer :: iflip_b     ! 1 = flip equilibrium toroidal field
   integer :: iflip_j     ! 1 = flip equilibrium toroidal current density

@@ -1050,12 +1050,15 @@ subroutine init_particles(lrestart, ierr)
                      bfptx79(:,OP_DZ),ri_79*pstx79(:,OP_DR)-bfptx79(:,OP_DZ),b2i79(:,OP_1)) &
             - intxx5(mu79(:,:,OP_DZ),nu79(:,:,OP_DR),ri_79*pstx79(:,OP_DR)-&
                      bfptx79(:,OP_DZ),ri_79*pstx79(:,OP_DZ)+bfptx79(:,OP_DR),b2i79(:,OP_1)) &
+#ifdef USE3D
             + intxx5(mu79(:,:,OP_DZ),nu79(:,:,OP_DP),ri_79*pstx79(:,OP_DR)-&
                      bfptx79(:,OP_DZ),ri2_79*bztx79(:,OP_1),b2i79(:,OP_1)) &
+#endif
             - intxx5(mu79(:,:,OP_DR),nu79(:,:,OP_DZ),ri_79*pstx79(:,OP_DZ)+&
                      bfptx79(:,OP_DR),ri_79*pstx79(:,OP_DR)-bfptx79(:,OP_DZ),b2i79(:,OP_1)) &
             + intxx5(mu79(:,:,OP_DR),nu79(:,:,OP_DR),ri_79*pstx79(:,OP_DZ)+&
                      bfptx79(:,OP_DR),ri_79*pstx79(:,OP_DZ)+bfptx79(:,OP_DR),b2i79(:,OP_1)) &
+#ifdef USE3D
             - intxx5(mu79(:,:,OP_DR),nu79(:,:,OP_DP),ri_79*pstx79(:,OP_DZ)+&
                      bfptx79(:,OP_DR),ri2_79*bztx79(:,OP_1),b2i79(:,OP_1)) &
             + intxx5(mu79(:,:,OP_DP),nu79(:,:,OP_DZ),ri2_79*bztx79(:,OP_1),ri_79*pstx79(:,OP_DR)-&
@@ -1063,6 +1066,7 @@ subroutine init_particles(lrestart, ierr)
             - intxx5(mu79(:,:,OP_DP),nu79(:,:,OP_DR),ri2_79*bztx79(:,OP_1),ri_79*pstx79(:,OP_DZ)+&
                      bfptx79(:,OP_DR),b2i79(:,OP_1)) &
             + intxx5(mu79(:,:,OP_DP),nu79(:,:,OP_DP),ri2_79*bztx79(:,OP_1),ri2_79*bztx79(:,OP_1),b2i79(:,OP_1)) &
+#endif
             )
 
    call insert_block(diff3_mat, itri, 1, 1, tempxx, MAT_ADD)
@@ -1910,11 +1914,11 @@ subroutine delete_particle(exchange)
       do irow = 2, nrows
          displs(irow) = displs(irow - 1) + recvcounts(irow - 1)
       end do
-      if ((ipart_begin .eq. 1) .and. (rowrank .gt. 0)) then
-         pdata(displs(rowrank + 1) + 1:displs(rowrank + 1) + sendcount) = pdata(ipart_begin:ipart_end)
-         ipart_begin = displs(rowrank + 1) + 1
-         ipart_end = displs(rowrank + 1) + sendcount
-      end if
+      ! if ((ipart_begin .eq. 1) .and. (rowrank .gt. 0)) then
+      !    pdata(displs(rowrank + 1) + 1:displs(rowrank + 1) + sendcount) = pdata(ipart_begin:ipart_end)
+      !    ipart_begin = displs(rowrank + 1) + 1
+      !    ipart_end = displs(rowrank + 1) + sendcount
+      ! end if
       allocate (pdata_temp(ipart_end-ipart_begin+1))
       pdata_temp=pdata(ipart_begin:ipart_end)
       call MPI_ALLGATHERV(pdata_temp, sendcount, MPI_particle, pdata, recvcounts, displs, MPI_particle, rowcomm, ierr)

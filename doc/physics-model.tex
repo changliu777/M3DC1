@@ -69,8 +69,7 @@ temperature $T_i$ are evolved independently using
 equations~(\ref{eq:electron_temperature}) and
 (\ref{eq:ion_temperature}).  Each of these models conserves total
 energy, in the sense that all sources and sinks are are due to
-physical processes that are included in the model.  For reference,
-these models are documented in \ref{sec:models}.
+physical processes that are included in the model.
 
 The electron heat source density $Q_e$ is the sum of the heating from
 radiation and ionization $Q_{rad}$ (this is negative for power lost
@@ -159,7 +158,7 @@ the main ion species, $T_i$.  The ion temperature equation is replaced
 by the sum of the temperature equations for all ion species
 (\textit{i.e.} main ions and all ionized impurities):
 \begin{multline}
-  \label{eq:ion_temperature}
+  \label{eq:ion_temperature_multispecies}
   n_* \left[ \frac{\partial T_i}{\partial t} + \vec{v} \cdot \nabla T_i
   + (\Gamma - 1) T_i \nabla \cdot \vec{v} \right] + \sigma_* T_i
   = \\

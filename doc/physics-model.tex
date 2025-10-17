@@ -1,10 +1,11 @@
 \section{Physics Model}
 \label{sec:physics_model}
 
-\section{Extended-MHD Equations}
+\subsection{Extended-MHD Equations}
 
 The basic physics model for a single-species plasma in M3D-C1 is the following:
 \begin{eqnarray}
+  label{eq:continuity}
   \frac{\partial n_i}{\partial t} + \nabla \cdot (n_i \vec{v})
   & = & \nabla \cdot (D \nabla n_i) + \sigma_i
 \\
@@ -17,7 +18,7 @@ The basic physics model for a single-species plasma in M3D-C1 is the following:
   %+ \vec{F}_s
 \end{eqnarray}
 For a single-species plasma, $n_e = Z_i n_i$, $\rho = m_i n_i$, and
-$\varpi = m_i \sigma_i$ (these are modified for;5D multi-species plasmas,
+$\varpi = m_i \sigma_i$ (these are modified for multi-species plasmas,
 as described in section~\ref{sec:impurities}).  The final term in
 equation~(\ref{eq:force_balance}) represents the slowing of the fluid
 velocity to conserve momentum as new particles are added.
@@ -27,6 +28,13 @@ The magnetic field is advanced using Faraday's law
 \label{eq:Faraday}
 \frac{\partial \vec{B}}{\partial t} = -\nabla \times \vec{E}
 \end{equation}
+or by integrating this equation to obtain the vector potential
+induction equation:
+\begin{equation}
+\label{eq:vector_induction}
+\frac{\partial \vec{A}}{\partial t} = -\vec{E} - \nabla \phi
+\end{equation}
+where the constant of integration, $\phi$, is the electric potential.
 The electron momentum equation defines the generalized Ohm's law
 \begin{equation}
 \label{eq:ohm}
@@ -170,3 +178,5 @@ Here, $n_*$, $\sigma_*$,$\Pi_*$, $Q_*$, and $\vec{q}_*$ are sum over
 all ion species of the particle densities, particle source densities,
 stresses, energy density sources, and energy density fluxes,                    
 respectively.
+
+\subsection{Resistive wall model}

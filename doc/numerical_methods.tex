@@ -42,6 +42,86 @@ The velocity is defined as
 
 \subsection{Finite Elements}
 
+In M3D-C1, fields are represented as a linear combination of basis
+functions $\nu_i$.  For example,
+\[
+  psi(\x) = \sum_i \nu_i(\vec{x}) \Psi_i
+\]
+In 2D simulations, these basis functions are reduced quintic
+elements~\cite{Jardin04}.  In 3D simulations, the basis functions are
+a tensor product of the reduced quintic elements (in the poloidal
+plane) with cubic Hermite elements (in the toroidal direction).  
+
+\subsubsection{Galerkin Method}
+
+The Galerkin method is used in M3D-C1 to discretize the equations.
+This involves multiplying each equation by a set of ``test functions''
+$\mu_i$ that span the space of the basis functions $\nu_i$ and
+integrating over the computational domain $\Omega$:
+\[
+  \frac{\partial \psi}{\partial t} = \nabla \cdot (\eta(\x) \nabla \psi(\x))
+  \to \int_\Omega{d^3x\ \mu_i(\x) \frac{\partial \psi(\x)}{\partial t}}
+    = \int_\Omega{d^3x\ \mu_i(\x) \nabla \cdot (\eta(\x) \nabla \psi(\x))}
+\]
+Expanding $\psi$ yields
+\[
+  \int_\Omega{d^3x\ \mu_i(\x) \nu_j(\x) \frac{\partial \Psi_j}{\partial t}} 
+    = \int{d^3x\ \mu_i(\x) \nabla \cdot \left[\eta(\x) \nabla \nu_j(\x)\,
+\Psi_j \right]}
+\]
+where summation over $j$ is implied.  In many cases, it is convenient
+(or necessary) to integrate by parts to reduce the number of
+derivatives on the basis functions.  For example,
+\[
+\begin{split}
+  \int_\Omega{d^3x\ \mu_i(\x) \nu_j(\x) \frac{\partial \Psi_j}{\partial t}}
+    = - \int_\Omega{d^3x\ \eta(\x) \nabla \mu_i(\x) \cdot \nabla \nu_j(\x)\, \Psi_j }\\
+      + \int_\Omega{d^3x\ \nabla \cdot \left[\mu_i(\x) \eta(\x) \nabla
+\nu_j(\x)\, \Psi_j \right] }
+\end{split}
+\]
+Stokes's theorem can be used to convert the last term to a surface integral:
+\[
+\begin{split}
+  \int_\Omega{d^3x\ \mu_i(\x) \nu_j(\x) \frac{\partial \Psi_j}{\partial t}}
+    = - \int_\Omega{d^3x\ \eta(\x) \nabla \mu_i(\x) \cdot \nabla \nu_j(\x) \Psi_j }\\
+      + \oint_{\partial \Omega}{d^2x\ \hat{n} \cdot \nabla \nu_j(\x)\,
+       \mu_i(\x)\, \eta(\x)\,  \Psi_j }
+\end{split}
+\]
+where $\hat{n}$ is the outward normal direction to the domain boundary.
+Finally, these equations are cast into a form amenable to solution by
+linear algebra solvers by calculating the integrals to populate a
+matrix equation:
+\[
+  M_{ij} \frac{\partial \Psi_j}{\partial t} = S_{ij} \Psi_j
+\]
+where
+\begin{eqnarray*}
+  M_{ij} & = & \int_\Omega{d^3x\ \mu_i(\x) \nu_j(\x)}
+\\
+  S_{ij} & = & - \int_\Omega{d^3x\ \eta(\x) \nabla \mu_i(\x) \cdot \nabla \nu_j(\x) }
+      + \oint_{\partial \Omega}{d^2x\ \hat{n} \cdot \nabla \nu_j(\x)\,
+\mu_i(\x)\, \eta(\x)}
+\end{eqnarray*}
+
+Note that it can be preferable not to integrate by parts in the
+toroidal direction in order to separate the toroidal dependence from
+the finite element calculation in the complex version.
+\[
+\begin{split}
+  \int_\Omega{d^3x\ \mu_i(\x) \nu_j(\x) \frac{\partial
+              \Psi_j}{\partial t}}
+    = - \int_\Omega{d^3x\ \eta(\x) \nabla_p \mu_i(\x) \cdot \nabla_p
+                    \nu_j(\x) \Psi_j }\\
+      + \int_\Omega{d^3x\ \mu_i(\x) \frac{1}{R}\frac{\partial}{\partial \varphi}
+             \left[\eta(\x) \nabla \nu_j(\x)\, \Psi_j \right]}\\
+      + \int_\Omega{d^3x\ \nabla_p \cdot \left[\mu_i(\x) \eta(\x) \nabla
+\nu_j(\x)\, \Psi_j \right] }
+\end{split}
+\]
+
+
 \subsubsection{Integration quadrature}
 
 The integrals required to calculate the weak-form equations of the
@@ -101,6 +181,71 @@ of $1/R$ will cause the quadrature not to be exact, as $1/R$ is not in
 the form of a polynomial.  The weights $w_i$ must also be multiplied
 by $R_i$ in cylindrical coordinates to account for the Jacobian of the
 transformation from cartesian to cylindrical coordinates.
+
+
+
+\subsection{Scalar Equations}
+
+\begin{equation}
+  \mu \frac{\partial n}{\partial t} = 
+    R^2 n \pb{\mu}{U} 
+    - \mu (n \omega)' 
+    + R^{-2} n \ip{\mu}{\chi} 
+    + \mu \sigma
+\end{equation}
+
+Scalar equations are obtained from force balance, equation~(\ref{eq:force_balance}), by applying the operators
+\begin{eqnarray*}
+  -\mu \nabla \varphi \cdot \nabla \times \left( R^2 n\, \square \right) \\
+  R^2 \mu \nabla \varphi \cdot \square \\
+  \mu \nabla_p \cdot \left( R^{-2} n\, \square \right)
+\end{eqnarray*}
+This yields the following equations for vorticity
+\begin{equation}
+  -\mu \nabla \varphi \cdot \nabla \times \left( R^2 n \frac{\partial \vec{v}}{\partial t} \right) =
+  -R^2 n \frac{\partial \vec{v}}{\partial t} \cdot (\nabla \mu \times \nabla \varphi)
+  +\nabla \cdot \left(R^2 \mu \nabla \varphi \times \frac{\partial \vec{v}}{\partial t} \right)
+\end{equation}
+axial velocity
+\begin{equation}
+  R^2 \mu \nabla \varphi \cdot \left(n \frac{\partial \vec{v}}{\partial t} \right)
+\end{equation}
+and compression
+\begin{equation}
+  \mu \nabla_p \cdot \left( R^{-2} n \frac{\partial \vec{v}}{\partial t} \right)
+  = -R^{-2} n \frac{\partial \vec{v}}{\partial t} 
+  + \nabla_p \cdot \left( R^{-2} \mu n \frac{\partial \vec{v}}{\partial t} \right)
+\end{equation}
+
+There are two options in M3D-C1 for obtaining scalar equations from
+Faraday's law, equation~(\ref{eq:Faraday}).  In the first option
+(\texttt{jadv=0} in \texttt{C1input}), an equation for the toroidal
+component of the vector potential $\psi$ is obtained by taking the
+toroidal component of the vector induction equation, equation~(\ref{eq:vector_induction}):
+\begin{equation}
+R^2 \mu \nabla \varphi \cdot \frac{\partial \vec{A}}{\partial t}
+ = -R^2 \mu \nabla \varphi \cdot \left(\vec{E} + \nabla \phi \right)
+\end{equation}
+In the second option (\texttt{jadv=1} in \texttt{C1input}), an
+equation for the toroidal current density is obtained by applying the
+operator $-\mu \nabla \varphi \cdot \nabla \times$ to Faraday's law, equation~(\ref{eq:Faraday}):
+\begin{equation}
+\begin{split}
+-\mu \nabla \varphi \cdot \nabla \times \frac{\partial \vec{B}}{\partial t}
+= \nabla \times (\nabla \mu  \times \nabla \varphi) \cdot \vec{E}
++ \left[ \nabla \varphi \cdot \vec{E} \times (\nabla \mu \times \nabla \varphi) \right]'\\
+\mbox{} + \nabla_p \cdot \left[ \vec{E} \times (\nabla \mu \times \nabla \varphi
++ \mu \nabla \varphi \times \frac{\partial \vec{B}}{\partial t} \right]
+\end{split}
+\end{equation}
+
+In both options, an equation for the toroidal field is obtained by
+from the toroidal component of equation~(\ref{eq:Faraday}):
+\begin{equation}
+\mu \nabla \varphi \cdot \frac{\partial \vec{B}}{\partial t} =
+-\vec{E} \cdot (\nabla \mu \times \nabla \varphi) 
++ \nabla \cdot (\mu \nabla \varphi \times \vec{E})
+\end{equation}
 
 
 \subsection{Time Step}

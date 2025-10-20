@@ -5,7 +5,7 @@
 
 The basic physics model for a single-species plasma in M3D-C1 is the following:
 \begin{eqnarray}
-  label{eq:continuity}
+  \label{eq:continuity}
   \frac{\partial n_i}{\partial t} + \nabla \cdot (n_i \vec{v})
   & = & \nabla \cdot (D \nabla n_i) + \sigma_i
 \\
@@ -59,7 +59,7 @@ and the ion temperature equation is:
 \begin{multline}
   \label{eq:ion_temperature}
   n_i \left[ \frac{\partial T_i}{\partial t} + \vec{v} \cdot \nabla T_i
-  + (\Gamma - 1) T_i \nabla \cdot \vec{v} \right] + \sigma_* T_i
+  + (\Gamma - 1) T_i \nabla \cdot \vec{v} \right] + \sigma_i T_i
   = \\
   (\Gamma - 1) \left[ - \nabla \cdot \vec{q}_i + Q_i
   -\Pi_i : \nabla \vec{v}  + \frac{1}{2} \varpi\, v^2

@@ -1683,7 +1683,7 @@ function read_field, name, x, y, t, slices=slices, mesh=mesh, $
    
        data = psi/r
        symbol = '!8A!D!9P!N!X'
-       d = dimensions(/b0, /l0, =extra)
+       d = dimensions(/b0, /l0, _EXTRA=extra)
 
 
    ;===========================================

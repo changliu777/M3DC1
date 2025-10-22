@@ -73,9 +73,9 @@ Some of the build scripts depend on the following environment
 variables to be set, to specify the location of the M3D-C1 source code
 and the directory in which to install any compiled executables:
 \begin{description}
-\item{\texttt{M3DC1\_CODE\_DIR}} should be set to the directory containing
+\item{\texttt{M3DC1\_DIR}} should be set to the directory containing
   the M3D-C1 source code.  For example:\\
-  \texttt{setenv M3DC1\_CODE\_DIR \$HOME/src/M3DC1}
+  \texttt{setenv M3DC1\_DIR \$HOME/src/M3DC1}
 \item{\texttt{M3DC1\_INSTALL\_DIR}} should be set to the directory in
   which M3D-C1 will be installed.  For example:\\
   \texttt{setenv M3DC1\_INSTALL\_DIR \$HOME/M3DC1}
@@ -83,36 +83,20 @@ and the directory in which to install any compiled executables:
 It is recommended to set these values in your login script.
 
 Makefiles for a number of systems are included in the repository,
-with filenames \texttt{\$M3DC1\_CODE\_DIR/unstructured/*.mk}.  For most of
+with filenames \texttt{\$M3DC1\_DIR/unstructured/*.mk}.  For most of
 these systems, environment modules are also included in the
-repository.  Current available \texttt{*.mk}:
-
-\begin{description}
-	\item{ kairos.mk}, ARCH=kairo
-	\item{ marconi.mk}, ARCH=marconi
-	\item{ mit.mk}, ARCH=mit
-	\item{ perlmutter\_cpu.mk}, ARCH=perlmutter\_cpu
-	\item{ perlmutter\_cpu\_gcc.mk}, ARCH=perlmutter\_cpu\_gcc
-	\item{ perlmutter\_gpu.mk}, ARCH=perlmutter\_gpu
-	\item{ saturn.mk}, ARCH=saturn
-	\item{ sdumont.mk}, ARCH=sdumont
-	\item{ stellar.mk}, ARCH=stellar
-	\item{ fllux.mk}, ARCH=flux
-\end{description}
-
-
-These modules will load the appropriate software modules
+repository.  These modules will load the appropriate software modules
 for building on that particular system, and can be loaded using:
 
 \begin{description}
 \item{NERSC Perlmutter}:\\
-  \texttt{module use \$M3DC1\_CODE\_DIR/modules/perlmutter}\\
+  \texttt{module use \$M3DC1\_DIR/modules/perlmutter}\\
   \texttt{module load m3dc1/devel}
 \item{PPPL Cluster}:\\
-  \texttt{module use \$M3DC1\_CODE\_DIR/modules/pppl}\\
+  \texttt{module use \$M3DC1\_DIR/modules/pppl}\\
   \texttt{module load m3dc1/devel-centos7}
 \item{PU Stellar}:\\
-  \texttt{module use \$M3DC1\_CODE\_DIR/modules/stellar}\\
+  \texttt{module use \$M3DC1\_DIR/modules/stellar}\\
   \texttt{module load m3dc1/devel}
 \end{description}
 
@@ -144,19 +128,18 @@ as examples.  In general, M3D-C1 requires the following dependencies:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Once the appropriate makefile has been defined, the M3D-C1 executables
-can be built by entering \texttt{\$M3DC1\_CODE\_DIR/unstructured} and
+can be built by entering \texttt{\$M3DC1\_DIR/unstructured} and
 running
 
-\texttt{make all ARCH=\$M3DC1\_ARCH}
+\texttt{make all}
 
 This will run the following commands:
 
 \begin{tabular}{ll}
-\texttt{make OPT=1 ARCH=\$M3DC1\_ARCH} & Builds the 2D version\\
-\texttt{make OPT=1 COM=1 ARCH=\$M3DC1\_ARCH} & Builds the complex version\\
-\texttt{make OPT=1 3D=1 MAX\_PTS=60 ARCH=\$M3DC1\_ARCH} & Builds the 3D version\\
-\texttt{make OPT=1 3D=1 MAX\_PTS=60 ST=1 ARCH=\$M3DC1\_ARCH} & Builds the stellarator version\\
-\texttt{make OPT=1 3D=1 MAX\_PTS=60 ST=1 PAR=1 ARCH=\$M3DC1\_ARCH} & Builds the kinetic  version\\
+\texttt{make OPT=1} & Builds the 2D version\\
+\texttt{make OPT=1 COM=1} & Builds the complex version\\
+\texttt{make OPT=1 3D=1 MAX\_PTS=60} & Builds the 3D version\\
+\texttt{make OPT=1 3D=1 MAX\_PTS=60 ST=1} & Builds the stellarator version\\
 \texttt{make a2cc} & Builds a utility for extracting coil currents
 from a-eqdsk files\\
 \texttt{make bin} & Puts executables into the \texttt{\_\$M3DC1\_ARCH} subdirectory\\
@@ -171,7 +154,7 @@ The M3D-C1 source code includes a suite of regression tests that
 should be run before commiting any new code to the repository.  To run
 these tests:
 
-\texttt{cd \$M3DC1\_CODE\_DIR/unstructured/regtest}
+\texttt{cd \$M3DC1\_DIR/unstructured/regtest}
 \texttt{./run <arch> <test>}
 
 where \texttt{<arch>} and \texttt{<test>} are optional arguments
@@ -182,11 +165,11 @@ regression test to run, respectively.  By default,
 If \texttt{<test>} is not
 specified, then all the regression tests will be run, using the batch
 scripts\\
-\texttt{\$M3DC1\_CODE\_DIR/unstructured/regtest/*/base/batchjob.<arch>}.
+\texttt{\$M3DC1\_DIR/unstructured/regtest/*/base/batchjob.<arch>}.
 
 The \texttt{run} script will create new directories in which to run
 these regression tests, named\\
-\texttt{\$M3DC1\_CODE\_DIR/unstructured/regtest/*/\$\{M3DC1\_VERSION\}\_<arch>/}.
+\texttt{\$M3DC1\_DIR/unstructured/regtest/*/\$\{M3DC1\_VERSION\}\_<arch>/}.
 
 If \texttt{<test>} is specified, then only
 \texttt{\$M3DC1\_ARCH/unstructured/regtest/<test>/base/batchjob.<arch>}

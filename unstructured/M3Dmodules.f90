@@ -327,6 +327,9 @@ module basic
   integer :: ikinetic_vpar
   real :: kinetic_rhomax
   real :: vpar_reduce
+  integer, parameter :: imode_filter_max = 100
+  integer :: imode_filter
+  integer, dimension(imode_filter_max) :: mode_filter_ntor
   real :: smooth_par, smooth_dens_parallel
 #endif
 

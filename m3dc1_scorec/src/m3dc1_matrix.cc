@@ -688,6 +688,7 @@ void m3dc1_matrix::printInfo() {
 // ***********************************
 matrix_mult::matrix_mult(int i, int s, FieldID field)
     : m3dc1_matrix(i, s, field), localMat(1) {
+  mymatrix_id=i;
   initialize();
 }
 
@@ -809,6 +810,7 @@ matrix_solve::matrix_solve(int i, int s, FieldID f) : m3dc1_matrix(i, s, f) {
   remotePidOwned = NULL;
   remoteNodeRow = NULL; // <pid, <locnode>, numAdj>
   remoteNodeRowSize = NULL;
+  mymatrix_id=i;
   initialize();
 }
 

@@ -3668,8 +3668,6 @@ int m3dc1_matrix_solve(int* matrix_id, FieldID* rhs_sol) //solveSysEqu_
   }
 #endif
 
-  mat->mymatrix_id = *matrix_id;
-
   (dynamic_cast<matrix_solve*>(mat))->solve(*rhs_sol);
   addMatHit(*matrix_id);
   return M3DC1_SUCCESS;
@@ -3697,8 +3695,6 @@ void m3dc1_matrix_solve_with_guess(int* matrix_id, FieldID* rhs_sol, FieldID* xV
     return;
   }
 #endif
-
-  mat->mymatrix_id = *matrix_id;
 
   (dynamic_cast<matrix_solve*>(mat))->solve_with_guess(*rhs_sol, *xVec_guess);
   addMatHit(*matrix_id);

@@ -1290,7 +1290,7 @@ subroutine set_defaults
        "Factor of parallel flow reduction for every timestep", particle_grp)
   call add_var_int("imode_filter", imode_filter, 0, &
        "Number of toroidal mode to be filtered", particle_grp)
-  call add_var_int_array("mode_filter_ntor", mode_filter_ntor, imode_filter_max, 0., &
+  call add_var_int_array("mode_filter_ntor", mode_filter_ntor, imode_filter_max, 0, &
        "Toroidal mode number to be filtered", particle_grp)
   call add_var_double("smooth_par", smooth_par, 1.e-8, &
        "Smoothing factor for particle pressure", particle_grp)

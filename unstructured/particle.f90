@@ -3678,17 +3678,17 @@ subroutine hdf5_write_particles(ierr)
          values(12, ipart) = pdata(pindex)%x0(3)
          values(13, ipart) = pdata(pindex)%v0(1)
          values(14, ipart) = pdata(pindex)%v0(2)
-         xtemp = pdata(pindex)%x
-         vtemp = pdata(pindex)%v
-         itri = pdata(pindex)%jel
-         call get_geom_terms(xtemp, itri, geomterms, .false., ierr)
-#ifdef USEST
-         call update_geom_terms_st(geomterms, elfieldcoefs(itri), .false.)
-#endif
-         spsq = vtemp(1)**2 + 2.0*qm_ion(pdata(pindex)%sps)*vtemp(2)*pdata(pindex)%B0
-         values(11, ipart) = dot_product(elfieldcoefs(itri)%rho, geomterms%g)
-         values(12, ipart) = vtemp(1)/sqrt(spsq)
-         values(13, ipart) = m_ion(pdata(pindex)%sps)*0.5*spsq
+         !xtemp = pdata(pindex)%x
+         !vtemp = pdata(pindex)%v
+         !itri = pdata(pindex)%jel
+         !call get_geom_terms(xtemp, itri, geomterms, .false., ierr)
+!#ifdef USEST
+         !call update_geom_terms_st(geomterms, elfieldcoefs(itri), .false.)
+!#endif
+         !spsq = vtemp(1)**2 + 2.0*qm_ion(pdata(pindex)%sps)*vtemp(2)*pdata(pindex)%B0
+         !values(11, ipart) = dot_product(elfieldcoefs(itri)%rho, geomterms%g)
+         !values(12, ipart) = vtemp(1)/sqrt(spsq)
+         !values(13, ipart) = m_ion(pdata(pindex)%sps)*0.5*spsq
      end do !ipart
 
       !Write the dataset
@@ -4509,11 +4509,13 @@ subroutine set_density
       !temp79a = n179(:,OP_1) + 0.9*(nfi79(:,OP_1))&
       !          -0.5*n179(:,OP_1)
       !temp79a = n179(:,OP_1)
-       where (real(temp79a(:)+n079(:,OP_1))<0.035)
+      if (linear.eq.0) then
+      where (real(temp79a(:)+n079(:,OP_1))<0.035)
       !   ! temp79a(:)=p179(:,OP_1)
           temp79a(:)=0.035-n079(:,OP_1)
       !   !temp79a(:)=0
       end where
+      endif
       !temp79a(:)=0.
       dofs = intx2(mu79(:,:,OP_1),temp79a)
       call vector_insert_block(p_v%vec,itri,1,dofs,VEC_ADD)

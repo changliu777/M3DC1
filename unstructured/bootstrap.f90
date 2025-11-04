@@ -1500,8 +1500,8 @@ function bs_b1psifbb(e,f,g,h,i)
     !   end do
 
     do i = 1, MAX_PTS
-      telec(i)=tet79(i,OP_1)*1e3/(1.6022e-9 * (4.*pi*n0_norm)/ (b0_norm**2))
-      tion(i)=tit79(i,OP_1)*1e3/(1.6022e-9 * (4.*pi*n0_norm)/ (b0_norm**2))
+      telec(i)=max(real(tet79(i,OP_1)),regular**2)*1e3/(1.6022e-9 * (4.*pi*n0_norm)/ (b0_norm**2))
+      tion(i)=max(real(tit79(i,OP_1)),regular**2)*1e3/(1.6022e-9 * (4.*pi*n0_norm)/ (b0_norm**2))
       denelec(i)=net79(i,OP_1)*1e20
       denion(i)=nt79(i,OP_1)*1e20
 
@@ -1643,7 +1643,6 @@ subroutine calculate_CommonTerm_Lambda_fordtenormdpsit(temp1,temp2,tempAA, tempB
     implicit none
   
     vectype, dimension(MAX_PTS) :: tempDD, tempAA, tempBB, tempCC, temp1, temp2, iBpsq, temp_delmagTe, temp_delTe
-    vectype, dimension(MAX_PTS) :: gen_jbsl3179,gen_jbsl3279,gen_jbsl3479,gen_jbsalpha79
     vectype, dimension(MAX_PTS) :: chisq,const1,adaptive_regularization
     integer :: i,j
     real(dp):: tempbeta,tempvar,temax3, pso
@@ -1703,11 +1702,11 @@ subroutine calculate_CommonTerm_Lambda_fordtenormdpsit(temp1,temp2,tempAA, tempB
         
           if(temax .le. 1e-8) then
            ! pso = 1. - pet79(j,OP_1)/net79(j,OP_1)/temax_readin
-            pso = 1. - real(tet79(j,OP_1))/temax_readin
+            pso = 1. - MAX(real(tet79(j, OP_1)),regular**2)/temax_readin
             temax3=temax_readin   !/(1.6022e-9 * (4.*pi*n0_norm)/ (b0_norm**2))
           else          
             !pso=1. - pet79(j,OP_1)/net79(j,OP_1)/(temax)
-            pso = 1. - real(tet79(j,OP_1))/(temax)
+            pso = 1. - MAX(real(tet79(j, OP_1)),regular**2)/(temax)
             temax3=temax         !/(1.6022e-9 * (4.*pi*n0_norm)/ (b0_norm**2))
           endif
          

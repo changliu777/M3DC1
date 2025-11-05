@@ -1,5 +1,5 @@
-diiid-13K0.smb : input
-	create_mesh.sh input
+all : input
+	m3dc1_mfmgen input
 
 .PHONY : clean
 clean :

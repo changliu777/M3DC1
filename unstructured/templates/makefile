@@ -1,11 +1,11 @@
-dirs = AUG DIII-D NSTX NSTX-U KSTAR ITER JET
+dirs := $(wildcard */.)
 
 .PHONY : $(dirs) clean all
 
 all : $(dirs)
 
 $(dirs) : 
-	cd $@ ; $(MAKE) $(MAKECMDGOALS)
+	$(MAKE) -C $@ $(MAKECMDGOALS)
 
 clean : $(dirs)
 	rm -f *~

@@ -3,7 +3,7 @@ SUBDIRS := $(wildcard */.)
 all: $(SUBDIRS)
 
 clean: $(SUBDIRS)
-	rm *~
+	rm -f *~
 
 $(SUBDIRS):
 	$(MAKE) -C $@ $(MAKECMDGOALS)

@@ -321,7 +321,7 @@ bin : a2cc mackenbach_profiles
 	ln -s $(SRCDIR)/sbin/part_mesh.sh bin
 
 bin_pic :
-	ln -s $(SRCDIR)/_$(ARCH)-complex-pic-opt-25/m3dc1_2d_complex bin/m3dc1_2d_complex_pic
+	ln -s $(SRCDIR)/_$(ARCH)-complex-pic-opt-25/m3dc1_2d_complex_pic bin
 	ln -s $(SRCDIR)/_$(ARCH)-3d-st-pic-opt-125/m3dc1_3d_st_pic bin
 
 endif

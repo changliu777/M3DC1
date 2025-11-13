@@ -329,7 +329,8 @@ subroutine den_eq
         end select
       elseif(iread_ne .eq. 22) then
 #ifdef USEST
-        temp79b = (xl_79-xcenter)**2 + (zl_79-zcenter)**2
+        temp79b = (xl_79-xcenter)**2 + (zl_79-zcenter)**2 + regular**2
+        n079(:,OP_1) = 0.
         do j=1, npoints
               call evaluate_spline(den_spline,temp79b(j),val)
               n079(j,OP_1) = val

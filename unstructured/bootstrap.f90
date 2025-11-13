@@ -1038,7 +1038,7 @@ function bs_b1psifbb(e,f,g,h,i)
 ! Compute the regularized expression
 ! regularized_expression = (dot(del_p, del_Te)) / (grad_Te_magnitude**2 + adaptive_regularization)
 
-   do i = 1, MAX_PTS
+   do i = 1, npoints
       tempbeta=temp_delmagTe(i)
       chisq(i) = ibootstrap_regular / (1.0 + 1e-2 * tempbeta) 
     enddo
@@ -1493,24 +1493,22 @@ function bs_b1psifbb(e,f,g,h,i)
     !--------------------------------------------------------!
     ! Calculate ln_lambda_e and nu_e_star for electrons
     !--------------------------------------------------------!
-    !   do j=1, dofs_per_element
-    !   do i = 1, MAX_PTS
-    !      outarr(i,op) = outarr(i,op) + dofs(j)*nu79(j,i,op)
-    !    end do
-    !   end do
 
-    do i = 1, MAX_PTS
-      telec(i)=max(real(tet79(i,OP_1)),regular**2)*1e3/(1.6022e-9 * (4.*pi*n0_norm)/ (b0_norm**2))
-      tion(i)=max(real(tit79(i,OP_1)),regular**2)*1e3/(1.6022e-9 * (4.*pi*n0_norm)/ (b0_norm**2))
-      denelec(i)=net79(i,OP_1)*1e20
-      denion(i)=nt79(i,OP_1)*1e20
+    do i = 1, npoints
+      telec(i)=max(real(tet79(i,OP_1))*1e3/(1.6022e-9 * (4.*pi*n0_norm)/ (b0_norm**2)),ibootstrap_regular**2)
+      tion(i)=max(real(tit79(i,OP_1))*1e3/(1.6022e-9 * (4.*pi*n0_norm)/ (b0_norm**2)),ibootstrap_regular**2)
+      denelec(i)=max(real(net79(i,OP_1))*1e20,ibootstrap_regular**2)
+      denion(i)=max(real(nt79(i,OP_1))*1e20,ibootstrap_regular**2)
 
+      !inverseaspect_ratio & ftrap can't be negative
+      jbs_invAspectRatio79(i, OP_1) = max(real(jbs_invAspectRatio79(i, OP_1)),ibootstrap_regular**2)
+      jbs_ftrap79(i, OP_1) = max(real(jbs_ftrap79(i, OP_1)),ibootstrap_regular**2)
 
-       ln_lambda_e(i) = 31.3 - log(sqrt(denelec(i)) / abs(telec(i)))
+      ln_lambda_e(i) = 31.3 - log(sqrt(denelec(i)) / abs(telec(i)))
       temp(i) = 6.921e-18 * Zcharge * (denelec(i)) * ln_lambda_e(i) / &
             (telec(i))**2 / jbs_invAspectRatio79(i, OP_1)**(1.5) * jbs_qR79(i, OP_1)
       
-      nu_e_star(i) = abs(temp(i))
+      nu_e_star(i) = max(real(temp(i)),ibootstrap_regular**2)
 
       !--------------------------------------------------------!
       ! Calculate ln_lambda_i and nu_i_star for ions
@@ -1522,16 +1520,15 @@ function bs_b1psifbb(e,f,g,h,i)
       temp(i) = 4.9e-18 * (denion(i)) * Zcharge**4 * ln_lambda_i(i) / &
                 (tion(i))**2 / jbs_invAspectRatio79(i, OP_1)**1.5 * jbs_qR79(i, OP_1)
 
-      nu_i_star(i) = abs(temp(i))
+      nu_i_star(i) = max(real(temp(i)),ibootstrap_regular**2)
 
     enddo
-
     !--------------------------------------------------------!
     !--------------------------------------------------------!
     ! Calculating coefficients L31,32,34,alpha
     !--------------------------------------------------------!
     !--------------------------------------------------------!
-    do i = 1, MAX_PTS
+    do i = 1, npoints
       ! Calculate f_t31
       !--------------------------------------------------------!
       temp(i) = 1.0 + &
@@ -1645,10 +1642,16 @@ subroutine calculate_CommonTerm_Lambda_fordtenormdpsit(temp1,temp2,tempAA, tempB
     vectype, dimension(MAX_PTS) :: tempDD, tempAA, tempBB, tempCC, temp1, temp2, iBpsq, temp_delmagTe, temp_delTe
     vectype, dimension(MAX_PTS) :: chisq,const1,adaptive_regularization
     integer :: i,j
-    real(dp):: tempbeta,tempvar,temax3, pso
-
+    real(dp):: tempbeta,tempvar,temax3, pso, temp_val, grad_mag_threshold 
+    
+    grad_mag_threshold = 1.0e-6
     temp1 = 0.
     temp2 = 0.
+    tempAA =0.
+    tempBB =0.
+    tempCC =0.
+    tempDD =0.
+
 
 
     !(del a.del Te)=dadr dTedr + 1/r^2 dadphi dTedphi + dadz dTedz 
@@ -1665,19 +1668,33 @@ subroutine calculate_CommonTerm_Lambda_fordtenormdpsit(temp1,temp2,tempAA, tempB
 ! Compute the regularized expression
 ! regularized_expression = (dot(del_p, del_Te)) / (grad_Te_magnitude**2 + adaptive_regularization)
 
-   do i = 1, MAX_PTS
-      tempbeta=temp_delmagTe(i)
-      chisq(i) = ibootstrap_regular / (1.0 + 1e-2 * tempbeta) 
-   enddo
+   do i = 1 , npoints
+    !  tempbeta=temp_delmagTe(i)
+    chisq(i) = ibootstrap_regular !/ (1.0 + 1e-2 * tempbeta) 
    
-    tempBB = 1./(tet79(:,OP_1))
-         
-    
-    tempCC=tit79(:,OP_DR)*tet79(:,OP_DR)+ tit79(:,OP_DZ)*tet79(:,OP_DZ)
+
+    temp_val=real(tet79(i,OP_1))*1e3/(1.6022e-9 * (4.*pi*n0_norm)/ (b0_norm**2))
+    if(temp_val .le. ibootstrap_regular**2) then
+       tempBB(i) = 0.0
+    else
+       tempBB(i) =1./(tet79(i,OP_1))
+    endif
+
+
+    temp_val=real(tit79(i,OP_1))*1e3/(1.6022e-9 * (4.*pi*n0_norm)/ (b0_norm**2))
+    if((temp_val .le. ibootstrap_regular**2) .or. &
+       (real(temp_delmagTe(i)) .le. grad_mag_threshold)) then
+       tempCC(i) = 0.0
+    else
+      tempCC(i)=tit79(i,OP_DR)*tet79(i,OP_DR)+ tit79(i,OP_DZ)*tet79(i,OP_DZ)
 #if defined(USE3D) || defined(USECOMPLEX)
-    if(itor.eq.1) tempCC = tempCC + tit79(:,OP_DP)*tet79(:,OP_DP)*ri2_79
-#endif
-    tempCC = tempCC/tit79(:,OP_1)/(temp_delmagTe+chisq)
+      if(itor.eq.1) tempCC(i) = tempCC(i) + tit79(i,OP_DP)*tet79(i,OP_DP)*ri2_79(i)
+#endif    
+       tempCC(i) = tempCC(i)/tit79(i,OP_1)/(temp_delmagTe(i)+chisq(i))
+    endif
+
+    enddo     
+    
      
   
     if(ibootstrap_model.eq.1 .or. ibootstrap_model.eq.3)then !Sauter & Angioni (1999) 
@@ -1696,16 +1713,26 @@ subroutine calculate_CommonTerm_Lambda_fordtenormdpsit(temp1,temp2,tempAA, tempB
 #if defined(USE3D) || defined(USECOMPLEX)
       if(itor.eq.1) tempAA = tempAA + net79(:,OP_DP)*tet79(:,OP_DP)*ri2_79
 #endif
+      
+      
+      do j = 1, npoints
+          
+          if( (real(net79(j,OP_1))*1e20 .le. ibootstrap_regular**2) .or. &
+              (real(temp_delmagTe(j)) .le. grad_mag_threshold) ) then
+            tempAA(j) = 0.0
+          else
+            tempAA(j) = (net79(j,OP_1)*tet79(j,OP_1)+nt79(j,OP_1)*tit79(j,OP_1))/net79(j,OP_1) * tempAA(j)/(temp_delmagTe(j)+chisq(j))
+          endif
 
-      tempAA = (net79(:,OP_1)*tet79(:,OP_1)+nt79(:,OP_1)*tit79(:,OP_1))/net79(:,OP_1) * tempAA/(temp_delmagTe+chisq)
-      do j = 1, MAX_PTS
-        
           if(temax .le. 1e-8) then
            ! pso = 1. - pet79(j,OP_1)/net79(j,OP_1)/temax_readin
+            !pso = 1. - abs(pet79(j,OP_1)/net79(j,OP_1))/temax_readin
+            
             pso = 1. - MAX(real(tet79(j, OP_1)),regular**2)/temax_readin
             temax3=temax_readin   !/(1.6022e-9 * (4.*pi*n0_norm)/ (b0_norm**2))
           else          
             !pso=1. - pet79(j,OP_1)/net79(j,OP_1)/(temax)
+            !pso=1. - abs(pet79(j,OP_1)/net79(j,OP_1))/(temax)
             pso = 1. - MAX(real(tet79(j, OP_1)),regular**2)/(temax)
             temax3=temax         !/(1.6022e-9 * (4.*pi*n0_norm)/ (b0_norm**2))
           endif
@@ -1714,7 +1741,6 @@ subroutine calculate_CommonTerm_Lambda_fordtenormdpsit(temp1,temp2,tempAA, tempB
 
         if (pso > 1.0) then
           !outside -- j.b=0
-          !print*,'here,pso>0,,pso,temax3,temax,temax_readin,tet79(j,OP_1)',pso,temax3,temax,temax_readin,real(tet79(j,OP_1))
           tempAA(j)=0.
           tempBB(j)=0.
           tempCC(j)=0.

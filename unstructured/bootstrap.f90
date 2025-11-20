@@ -1619,6 +1619,9 @@ subroutine calculate_CommonTerm_Lambda_fordtenormdpsit(temp1,temp2,tempAA, tempB
 
    !Redl et al (2021): ibootstrap_model=4:! equivalent to 2 but a simplified version
     !temp3 = A = -2pi Gbar / (iota - helicity_N) L31        p d lnn  /d psit            =  (ne_s Te_s + ni_s Ti_s)/ne (d lnne / d psit)) = (ne_s Te_s + ni_s Ti_s)/ne (del ne.del Te)/(|del Te|^2 + chi^2) dTe/dpsit
+    !temp3 = A = -2pi Gbar / (iota - helicity_N) L31        pe d lnne  /d psit   +  pi d lnni  /d psit         = 
+    !             -2pi Gbar / (iota - helicity_N) L31       [(pe)/ne (del ne.del Te)/(|del Te|^2+ chi^2) 
+    !                                                       +(pi)/ni (del ni.del Te)/(|del Te|^2+ chi^2)] dTe/dpsit
     !temp4 = B = -2pi Gbar / (iota - helicity_N) (L31+L32) Pe d lnTe /d psit            =  pe/Te  dTe/dpsit 
     !temp5 = C = -2pi Gbar / (iota - helicity_N) (L31+L34alpha) (p-pe)d lnTi /d psit    =  (p-pe)/Ti (del Ti .del Te)/(|del Te|^2 + chi^2) dTe/dpsit
     
@@ -1721,8 +1724,8 @@ subroutine calculate_CommonTerm_Lambda_fordtenormdpsit(temp1,temp2,tempAA, tempB
        call calculate_Coefficients_Redl(jbsl3179(:,OP_1),jbsl3279(:,OP_1),jbsl3479(:,OP_1),jbsalpha79(:,OP_1))
 
        !A = d lnn  /d psi    = p/n (del n.del Te)/(|del Te|^2 + chi^2) dTe/dpsit
-       !A = pe d lnne  /d psi +  pi d lnni  /d psi    = [(pe)/ne (del ne.del Te)/(|del Te|^2) 
-       !                                                +(pi)/ni (del ni.del Te)/(|del Te|^2)] dTe/dpsit
+       !A = pe d lnne  /d psi +  pi d lnni  /d psi    = [(pe)/ne (del ne.del Te)/(|del Te|^2+ chi^2) 
+       !                                                +(pi)/ni (del ni.del Te)/(|del Te|^2+ chi^2)] dTe/dpsit
       tempAA_ne=net79(:,OP_DR)*tet79(:,OP_DR)+ net79(:,OP_DZ)*tet79(:,OP_DZ)
 #if defined(USE3D) || defined(USECOMPLEX)
       if(itor.eq.1) tempAA_ne = tempAA_ne + net79(:,OP_DP)*tet79(:,OP_DP)*ri2_79

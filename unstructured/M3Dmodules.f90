@@ -324,6 +324,7 @@ module basic
   integer :: num_par_max
   real, dimension(2) :: num_par_scale
   real, dimension(2) :: kinetic_nrmfac_scale
+  integer :: idiamagnetic_advection
   integer :: ikinetic_vpar
   real :: kinetic_rhomax
   real :: vpar_reduce
@@ -589,6 +590,7 @@ module arrays
   type(field_type) :: den_i_0, den_i_1, den_f_0, den_f_1
   type(field_type) :: v_i_par
   type(field_type) :: v_f_par
+  type(field_type) :: ustar_field, vzstar_field, chistar_field
 #endif
 
   ! the following pointers point to the locations of the named field within

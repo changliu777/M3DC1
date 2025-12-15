@@ -820,9 +820,9 @@ subroutine axial_vel_lin(trialx, lin, ssterm, ddterm, r_bf, q_bf, advfield, &
      tempx = v2vun  (trialx,lin,phstar079,rho79) &
           +  v2vvn  (trialx,vzstar079,lin,rho79) &
           +  v2vchin(trialx,lin,chstar079,rho79)
-#endif
      ssterm(:,vz_g) = ssterm(:,vz_g) -     0.5     *dt*tempx
      ddterm(:,vz_g) = ddterm(:,vz_g) + (1.-0.5*bdf)*dt*tempx
+#endif
 
 
      if(numvar.ge.3) then
@@ -1412,7 +1412,7 @@ subroutine compression_lin(trialx, lin, ssterm, ddterm, r_bf, q_bf, advfield, &
      ssterm(:,vz_g) = ssterm(:,vz_g) -     thimp     *dt*tempx
      ddterm(:,vz_g) = ddterm(:,vz_g) + (1.-thimp*bdf)*dt*tempx
 #ifdef USEPARTICLES
-      tempx = v3vvn  (trialx,lin,vzstar079,rho79)
+     tempx = v3vvn  (trialx,lin,vzstar079,rho79)
      ssterm(:,vz_g) = ssterm(:,vz_g) -     0.5     *dt*tempx
      ddterm(:,vz_g) = ddterm(:,vz_g) + (1.-0.5*bdf)*dt*tempx
 #endif

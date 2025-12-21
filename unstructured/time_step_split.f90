@@ -691,7 +691,7 @@ subroutine import_time_advance_vectors_split
   den_v = den_field(1)
   ne_v = ne_field(1)
   if(irunaway .eq. 2) call runaway_advance
-  if((irunaway .ge. 1).and.(runaway_characteristics.eq.1)) call runaway_advection_step(dt*t0_norm)
+  if((irunaway .ge. 1).and.(ra_characteristics.eq.1)) call runaway_advection_step(dt*t0_norm)
   if(irunaway .gt. 0) nre_v = nre_field(1)
 #ifdef USEPARTICLES
   if(itwofluid .gt. 0) densmooth_v = densmooth_field

@@ -360,7 +360,7 @@ Program Reducedquintic
   ! if there are no timesteps to calculate, then skip time loop
   if(ntimemax.le.ntime) call safestop(0)
 
-  if ((irunaway.ge.1).and.(runaway_characteristics.eq.1)) call runaway_advection_initialize
+  if ((irunaway.ge.1).and.(ra_characteristics.eq.1)) call runaway_advection_initialize
 
   ! main time loop
   ! ~~~~~~~~~~~~~~

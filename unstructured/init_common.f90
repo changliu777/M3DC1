@@ -152,7 +152,7 @@ subroutine init_perturbations
   psi_vec = 0.
   phi_vec = 0.
 
-  ifield = FIELD_PSI + FIELD_P
+  ifield = FIELD_PSI + FIELD_P + FIELD_KIN
 
   numelms = local_elements()
 
@@ -188,7 +188,7 @@ subroutine init_perturbations
              x_79(:), z_79(:), imr)
 
 #ifdef USEPARTICLES
-        where((imr.eq.REGION_PLASMA).and.(abs(pt79(:,OP_1))>10*pedge))
+        where((imr.eq.REGION_PLASMA).and.(abs(rhof79(:,OP_1))<0.5))
 #else
         where(imr.eq.REGION_PLASMA)
 #endif
@@ -669,6 +669,10 @@ subroutine nre_eq
 
      nre079(:,OP_1) = 1.0*ri_79*ps079(:,OP_GS)/1.000
      !if(irunaway == 1) nre079(:,OP_1) = 0.8e-0*nre079(:,OP_1)
+     !rr=sqrt((x_79-10.5)**2+z_79**2)
+     !nre079(:,OP_1) = nre079(:,OP_1)*exp(-rr**2/0.04)
+     !nre079(:,OP_1) = 0.
+
      if(irunaway == 2) nre079(:,OP_1) = 0.
 
      dofs = intx2(mu79(:,:,OP_1),nre079(:,OP_1))
@@ -709,7 +713,12 @@ subroutine nre_per
   do itri=1,numelms
      call define_element_quadrature(itri,int_pts_main,int_pts_tor)
      call define_fields(itri,def_fields,1,0)
-     nre179(:,OP_1) = 0
+     nre179(:,OP_1) = 0e-7
+     !nre179(:,OP_1) = 1e-7
+     !rr=sqrt((x_79-10.5)**2+z_79**2)
+     !nre179(:,OP_1) = nre179(:,OP_1)*exp(-rr**2/0.04)
+
+
      dofs = intx2(mu79(:,:,OP_1),nre179(:,OP_1))
 
      call vector_insert_block(nre_vec%vec,itri,1,dofs,VEC_ADD)

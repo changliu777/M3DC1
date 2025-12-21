@@ -6077,7 +6077,7 @@ subroutine ludefnre_n(itri)
 
   type(matrix_type), pointer :: nrenre1, nrenre0, nreb0, nrepsi0, nrev0
   type(vector_type), pointer :: nresource
-  real :: thimpb, thimp2, ncycles, rdiff
+  real :: thimpb, thimp2
   integer :: imask(dofs_per_element)
 
   call get_zone(itri, izone)
@@ -6128,38 +6128,37 @@ subroutine ludefnre_n(itri)
   if(itime_independent.eq.0) ddterm = ddterm + tempxx*bdf
 
   thimp2=thimp
-  ncycles=1.0*ra_cyc
-  rdiff = radiff
+  thimp2=0.5
 
   do j=1,dofs_per_element
 
-     tempx = nre1nrediff(mu79,nu79(j,:,:))/ncycles * rdiff
+     tempx = nre1nrediff(mu79,nu79(j,:,:))/ra_cyc * radiff
      ssterm(:,j) = ssterm(:,j) -     thimp2     *dt*tempx
      ddterm(:,j) = ddterm(:,j) + (1.-thimp2*bdf)*dt*tempx
 
-     if (runaway_characteristics.eq.1) cycle
+     if (ra_characteristics.eq.1) cycle
 
-     tempx = nre1nrepsi(mu79,nu79(j,:,:),bi79,pst79)/ncycles
+     tempx = nre1nrepsi(mu79,nu79(j,:,:),bi79,pst79)/ra_cyc
      ssterm(:,j) = ssterm(:,j) -     thimp2     *dt*tempx
      ddterm(:,j) = ddterm(:,j) + (1.-thimp2*bdf)*dt*tempx
 
-     tempx = nre1nreu(mu79,nu79(j,:,:),pht79)/ncycles
+     tempx = nre1nreu(mu79,nu79(j,:,:),pht79)/ra_cyc
      ssterm(:,j) = ssterm(:,j) -     thimp2     *dt*tempx
      ddterm(:,j) = ddterm(:,j) + (1.-thimp2*bdf)*dt*tempx
 
      if(eqsubtract.eq.1) then
-        tempx = nre1nrepsi(mu79,nre079,bi79,nu79(j,:,:))/ncycles
+        tempx = nre1nrepsi(mu79,nre079,bi79,nu79(j,:,:))/ra_cyc
         qqterm(:,j,1) = qqterm(:,j,1) + dt*tempx
-        tempx = nre1nreu(mu79,nre079,nu79(j,:,:))/ncycles
+        tempx = nre1nreu(mu79,nre079,nu79(j,:,:))/ra_cyc
         kkterm(:,j,1) = kkterm(:,j,1) + dt*tempx
      endif
 
-        tempx = nre1nreb(mu79,nu79(j,:,:),bi79,bzt79)/ncycles
+        tempx = nre1nreb(mu79,nu79(j,:,:),bi79,bzt79)/ra_cyc
         ssterm(:,j) = ssterm(:,j) -     thimp2     *dt*tempx
         ddterm(:,j) = ddterm(:,j) + (1.-thimp2*bdf)*dt*tempx
 
         if(eqsubtract.eq.1) then
-           tempx = nre1nreb(mu79,nre079,bi79,nu79(j,:,:))/ncycles
+           tempx = nre1nreb(mu79,nre079,bi79,nu79(j,:,:))/ra_cyc
            rrterm(:,j,1) = rrterm(:,j,1) + dt*tempx
         endif
 

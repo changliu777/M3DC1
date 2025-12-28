@@ -6128,7 +6128,7 @@ subroutine ludefnre_n(itri)
   if(itime_independent.eq.0) ddterm = ddterm + tempxx*bdf
 
   thimp2=thimp
-  thimp2=0.5
+  !thimp2=0.5
 
   do j=1,dofs_per_element
 

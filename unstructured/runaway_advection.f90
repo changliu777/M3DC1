@@ -553,7 +553,7 @@ subroutine init_particles(lrestart, ierr)
                dpar%x(3) = z_79(ipar)
                dpar%x(2) = phi_79(ipar)
                dpar%jel = itri
-               dpar%v(1) =  -v0_norm/100*cre
+               dpar%v(1) =  v0_norm/100*cre
                dpar%v(2) = 0.
                !pdata(ielm)%ion(ip)%v(1) = 100000.                        !v_parallel
 
@@ -1003,7 +1003,7 @@ subroutine fdot(x, v, w, dxdt, dvdt, dwdt, dEpdt, itri, ierr)
    !dB0dt=dot_product(bhat, -dBdt)
    !dwdt = (w - 1.0)*(dot_product(weqv1, gradf0) - &
    !     q_ion*dot_product(weqv0, E_cyl)*df0de)/f0
-   dwdt = (1.0)*(1.*dot_product(gradpsi,weqv1))
+   dwdt = (-1.0)*(1.*dot_product(gradpsi,weqv1))
    !if (deltaB_last(2).ne.0.) write(0,*) deltaB(2),deltaB_last(2)
    !dEpdt = q_ion*(dot_product(weqvD, E_cyl)+v(2)*dB0dt)
    !write(0,*) dt_particle, t0_norm_particle
@@ -1021,8 +1021,11 @@ subroutine fdot(x, v, w, dxdt, dvdt, dwdt, dEpdt, itri, ierr)
    !endif
    endif
    if (linear_particle .eq. 1) then
-      dxdt = dxdt0
-      dvdt = dvdt0
+      dxdt = -dxdt0
+      dvdt = -dvdt0
+   else
+      dxdt = -dxdt
+      dvdt = -dvdt
    end if
 
    !dwdt = (1.-w)/(dt_particle*t0_norm_particle)

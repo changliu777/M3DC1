@@ -106,8 +106,13 @@ subroutine define_mpi_particle(ierr)
    integer, parameter :: pnvars = 8
    integer, dimension(pnvars), parameter :: pblklen = (/3, vspdims, 1, 1, 1, 1, 1, 1/)
    integer(kind=MPI_ADDRESS_KIND), dimension(pnvars) :: pdspls
+#ifdef USECOMPLEX
+   integer, dimension(pnvars), parameter :: ptyps = (/MPI_DOUBLE_PRECISION, MPI_DOUBLE_PRECISION, &
+ MPI_DOUBLE_COMPLEX, MPI_DOUBLE_COMPLEX, MPI_INTEGER, MPI_INTEGER, MPI_LOGICAL, MPI_LOGICAL/)
+#else
    integer, dimension(pnvars), parameter :: ptyps = (/MPI_DOUBLE_PRECISION, MPI_DOUBLE_PRECISION, &
  MPI_DOUBLE_PRECISION, MPI_DOUBLE_PRECISION, MPI_INTEGER, MPI_INTEGER, MPI_LOGICAL, MPI_LOGICAL/)
+#endif
 
    type(particle) :: dum_par
 
@@ -269,7 +274,6 @@ subroutine init_particles(lrestart, ierr)
    integer :: gfx, isghost, xid, nle = 0, nge = 0
    integer :: ie, imu, pperrow
    character(len=32) :: part_file_name
-   type(particle), dimension(:), allocatable :: pdata_local  !Particle arrays
    type(element_data) :: eldat
    real :: xi, zi, eta, xi2, eta2
    vectype, dimension(dofs_per_element, dofs_per_element) :: tempxx
@@ -486,7 +490,6 @@ subroutine init_particles(lrestart, ierr)
    !    call hdf5_read_particles(part_file_name, ierr)
    !    if (myrank .eq. 0) print *, 'read_parts returned with ierr=', ierr
    ! else
-       allocate (pdata_local(npar/maxrank*10))
       !First pass: assign particles to processors, elements
       locparts = 0
       locparts2 = 0
@@ -559,10 +562,12 @@ subroutine init_particles(lrestart, ierr)
 
                dpar%wt = 0.
                dpar%f0 = 0.
+               call get_geom_terms(dpar%x, itri, geomterms, .false., ierr)
+               dpar%f0=dot_product(geomterms%g, elfieldcoefs(itri)%nrev1)
                locparts2 = (itri-1)*npoints+ipar
                dpar%gid = locparts2
                locparts = locparts + 1
-               pdata_local(locparts) = dpar
+               pdata(locparts2) = dpar
             endif
          end do !iz
       end do
@@ -572,23 +577,15 @@ subroutine init_particles(lrestart, ierr)
       sendcount = locparts
       recvcounts(hostrank + 1) = sendcount
       call MPI_ALLGATHER(sendcount, 1, MPI_INTEGER, recvcounts, 1, MPI_INTEGER, hostcomm, ierr)
-      displs(1) = 0
-      do icol = 2, ncols
-         displs(icol) = displs(icol - 1) + recvcounts(icol - 1)
-      end do
-      call MPI_GATHERV(pdata_local(1:locparts), sendcount, MPI_particle, pdata,&
-         recvcounts, displs, MPI_particle, 0, hostcomm, ierr)
       call mpi_barrier(mpi_comm_world, ierr)
       ipart_begin = 1
       ipart_end = sum(recvcounts)
-      deallocate (recvcounts)
-      deallocate (displs)
-      deallocate (pdata_local)
       if (hostrank == 0) then
          write(0,*) ipart_begin, ipart_end
          do  ipart = ipart_begin, ipart_end
             itri=int((pdata(ipart)%gid-1)/npoints)+1
             ipar=mod((pdata(ipart)%gid-1),npoints)+1
+            !write(0,*) ipar,itri,ipart
             particle_map(ipar,itri)=ipart
          end do
       end if
@@ -644,7 +641,6 @@ subroutine advance_particles(tinc)
    integer :: i, j, temp
    integer, dimension(1024) :: host_seq
    real :: rand_val
-   type(particle), dimension(:), allocatable :: pdata_local  !Particle arrays
 
    if (tinc .le. 0.0) return
 
@@ -1023,6 +1019,8 @@ subroutine fdot(x, v, w, dxdt, dvdt, dwdt, dEpdt, itri, ierr)
    if (linear_particle .eq. 1) then
       dxdt = -dxdt0
       dvdt = -dvdt0
+      !dxdt=0.
+      !dvdt=0.
    else
       dxdt = -dxdt
       dvdt = -dvdt

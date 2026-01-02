@@ -6066,7 +6066,7 @@ subroutine ludefnre_n(itri)
 
   integer :: i, j, izone
   vectype, dimension(dofs_per_element, dofs_per_element) :: ssterm, ddterm
-  vectype, dimension(dofs_per_element, dofs_per_element, 3) :: rrterm, qqterm, kkterm
+  vectype, dimension(dofs_per_element, dofs_per_element, 3) :: qqterm, kkterm
   vectype, dimension(dofs_per_element) :: oterm
 
   vectype, dimension(dofs_per_element) :: tempx
@@ -6075,7 +6075,7 @@ subroutine ludefnre_n(itri)
 
   vectype :: freq_fac
 
-  type(matrix_type), pointer :: nrenre1, nrenre0, nreb0, nrepsi0, nrev0
+  type(matrix_type), pointer :: nrenre1, nrenre0, nreb0, nrev0
   type(vector_type), pointer :: nresource
   real :: thimpb, thimp2
   integer :: imask(dofs_per_element)
@@ -6101,15 +6101,13 @@ subroutine ludefnre_n(itri)
   if(isplitstep.ge.1) then
      nrenre1 => s15_mat
      nrenre0 => d15_mat
-     nreb0 => r15_mat
-     nrepsi0 => q15_mat
+     nreb0 => q15_mat
      nrev0   => k15_mat
      nresource => qn5_vec
   endif
 
   ssterm = 0.
   ddterm = 0.
-  rrterm = 0.
   qqterm = 0.
   kkterm = 0.
   oterm = 0.
@@ -6128,7 +6126,7 @@ subroutine ludefnre_n(itri)
   if(itime_independent.eq.0) ddterm = ddterm + tempxx*bdf
 
   thimp2=thimp
-  !thimp2=0.5
+  thimp2=0.5
 
   do j=1,dofs_per_element
 
@@ -6149,19 +6147,39 @@ subroutine ludefnre_n(itri)
      if(eqsubtract.eq.1) then
         tempx = nre1nrepsi(mu79,nre079,bi79,nu79(j,:,:))/ra_cyc
         qqterm(:,j,1) = qqterm(:,j,1) + dt*tempx
+
         tempx = nre1nreu(mu79,nre079,nu79(j,:,:))/ra_cyc
         kkterm(:,j,1) = kkterm(:,j,1) + dt*tempx
      endif
 
-        tempx = nre1nreb(mu79,nu79(j,:,:),bi79,bzt79)/ra_cyc
+     tempx = nre1nreb(mu79,nu79(j,:,:),bi79,bzt79)/ra_cyc
+     ssterm(:,j) = ssterm(:,j) -     thimp2     *dt*tempx
+     ddterm(:,j) = ddterm(:,j) + (1.-thimp2*bdf)*dt*tempx
+
+     if(numvar.ge.2) then
+        tempx = nre1nrev(mu79,nu79(j,:,:),vzt79)/ra_cyc
         ssterm(:,j) = ssterm(:,j) -     thimp2     *dt*tempx
         ddterm(:,j) = ddterm(:,j) + (1.-thimp2*bdf)*dt*tempx
 
         if(eqsubtract.eq.1) then
            tempx = nre1nreb(mu79,nre079,bi79,nu79(j,:,:))/ra_cyc
-           rrterm(:,j,1) = rrterm(:,j,1) + dt*tempx
-        endif
+           qqterm(:,j,2) = qqterm(:,j,2) + dt*tempx
 
+           tempx = nre1nrev(mu79,nre079,nu79(j,:,:))/ra_cyc
+           kkterm(:,j,2) = kkterm(:,j,2) + dt*tempx
+         endif
+     endif
+
+     if(numvar.ge.3) then
+        tempx = nre1nrechi(mu79,nu79(j,:,:),cht79)/ra_cyc
+        ssterm(:,j) = ssterm(:,j) -     thimp2     *dt*tempx
+        ddterm(:,j) = ddterm(:,j) + (1.-thimp2*bdf)*dt*tempx
+        
+        if(eqsubtract.eq.1) then
+           tempx = nre1nrechi(mu79,nre079,nu79(j,:,:))/ra_cyc
+           kkterm(:,j,3) = kkterm(:,j,3) + dt*tempx
+        endif
+     endif
 
   end do
   ! Source term
@@ -6171,7 +6189,7 @@ subroutine ludefnre_n(itri)
 
 401 continue
 
-  if(isplitstep.eq.0) rrterm = -rrterm
+  !if(isplitstep.eq.0) rrterm = -rrterm
   if(idiff .gt. 0) ddterm = ddterm - ssterm
 
 
@@ -6180,7 +6198,6 @@ subroutine ludefnre_n(itri)
   call apply_boundary_mask(itri, 0, ssterm, imask)
   call apply_boundary_mask(itri, 0, ddterm, imask)
   do i=1, 3
-     call apply_boundary_mask(itri, 0, rrterm(:,:,i), imask)
      call apply_boundary_mask(itri, 0, qqterm(:,:,i), imask)
      call apply_boundary_mask(itri, 0, kkterm(:,:,i), imask)
   end do
@@ -6191,11 +6208,16 @@ subroutine ludefnre_n(itri)
 !!$OMP CRITICAL
   call insert_block(nrenre1,itri,nre_i,nre_i,ssterm,MAT_ADD)
   call insert_block(nrenre0,itri,nre_i,nre_i,ddterm,MAT_ADD)
-  call insert_block(nrepsi0,itri,nre_i,psi_i,qqterm(:,:,1),MAT_ADD)
+  call insert_block(nreb0,itri,nre_i,psi_i,qqterm(:,:,1),MAT_ADD)
   call insert_block(nrev0,itri,nre_i,u_i,kkterm(:,:,1),MAT_ADD)
 
   if(numvar.ge.2) then
-     call insert_block(nreb0,itri,nre_i,bz_i,rrterm(:,:,1),MAT_ADD)
+     call insert_block(nreb0,itri,nre_i,bz_i,qqterm(:,:,2),MAT_ADD)
+     call insert_block(nrev0,itri,nre_i,vz_i,kkterm(:,:,2),MAT_ADD)
+  endif
+
+  if(numvar.ge.3) then
+     call insert_block(nrev0,itri,nre_i,chi_i,kkterm(:,:,3),MAT_ADD)
   endif
 
   call vector_insert_block(nresource,itri,nre_i,oterm,VEC_ADD)

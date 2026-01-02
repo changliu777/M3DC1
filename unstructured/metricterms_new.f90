@@ -9243,6 +9243,52 @@ function nre1nreu(e,f,g)
   nre1nreu = temp
 end function nre1nreu
 
+! NRE1nrev
+! ====
+function nre1nrev(e,f,g)
+
+  use basic
+  use m3dc1_nint
+
+  implicit none
+
+  vectype, dimension(dofs_per_element) :: nre1nrev
+  vectype, intent(in), dimension(dofs_per_element,MAX_PTS,OP_NUM) :: e
+  vectype, intent(in), dimension(MAX_PTS,OP_NUM) :: f,g
+  vectype, dimension(dofs_per_element) :: temp
+
+#if defined(USE3D) || defined(USECOMPLEX)
+  temp = -intx3(e(:,:,OP_1),f(:,OP_1 ),g(:,OP_DP)) &
+       -  intx3(e(:,:,OP_1),f(:,OP_DP),g(:,OP_1 ))
+
+  nre1nrev = temp
+#else
+  nre1nrev = 0.
+#endif
+end function nre1nrev
+
+! NRE1nrechi
+! ======
+function nre1nrechi(e,f,g)
+
+  use basic
+  use m3dc1_nint
+
+  implicit none
+
+  vectype, dimension(dofs_per_element) :: nre1nrechi
+  vectype, intent(in), dimension(dofs_per_element,MAX_PTS,OP_NUM) :: e
+  vectype, intent(in), dimension(MAX_PTS,OP_NUM) :: f,g
+  vectype, dimension(dofs_per_element) :: temp
+
+  temp = intx4(e(:,:,OP_DZ),ri2_79,f(:,OP_1),g(:,OP_DZ)) &
+       + intx4(e(:,:,OP_DR),ri2_79,f(:,OP_1),g(:,OP_DR))
+
+  nre1nrechi = temp
+end function nre1nrechi
+
+
+
 !============================================================================
 ! P1 TERMS
 !============================================================================

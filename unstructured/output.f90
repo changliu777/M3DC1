@@ -76,6 +76,7 @@ contains
     use diagnostics
     use auxiliary_fields
     use particles
+    use signal_handler
 
     implicit none
 
@@ -101,8 +102,8 @@ contains
 1003  format("OUTPUT: hdf5_write_scalars   ", I5, 1p2e16.8)
     endif
 
-    ! only write field data evey ntimepr timesteps
-    if(mod(ntime-ntime0,ntimepr).eq.0) then
+    ! only write field data evey ntimepr timesteps or after termination signal was sent by Slurm
+    if((mod(ntime-ntime0,ntimepr).eq.0) .or. checkpoint_flag) then
        if(iwrite_aux_vars.eq.1) then
           if(myrank.eq.0 .and. iprint.ge.2) print *, "  calculating aux fields"
           call calculate_auxiliary_fields(eqsubtract)

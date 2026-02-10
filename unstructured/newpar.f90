@@ -29,6 +29,8 @@ Program Reducedquintic
   use m3dc1_vel_prof
   use hypervisc
   use runaway_advection
+  use iso_c_binding
+  use signal_handler
 #ifdef _OPENACC
   use openacc
 #endif
@@ -51,7 +53,7 @@ Program Reducedquintic
   integer :: ip
   character(len=32) :: mesh_file_name
   logical :: update_mesh
-
+  type(c_funptr) :: sig_handler
   ! Initialize MPI
 #ifdef _OPENMP
   integer :: omp_provided, omp_requested
@@ -361,6 +363,8 @@ Program Reducedquintic
   if(ntimemax.le.ntime) call safestop(0)
 
   if ((irunaway.ge.1).and.(ra_characteristics.eq.1)) call runaway_advection_initialize
+
+  sig_handler = c_signal(34_c_int, c_funloc(handle_signal))
 
   ! main time loop
   ! ~~~~~~~~~~~~~~

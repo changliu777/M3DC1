@@ -29,7 +29,6 @@ Program Reducedquintic
   use m3dc1_vel_prof
   use hypervisc
   use runaway_advection
-  use iso_c_binding
   use signal_handler
 #ifdef _OPENACC
   use openacc
@@ -365,10 +364,7 @@ Program Reducedquintic
 
   if ((irunaway.ge.1).and.(ra_characteristics.eq.1)) call runaway_advection_initialize
 
-  checkpoint_flag = .false.
-  writing_output = .false.
-  !sig_handler = c_funloc(handle_signal)
-  !old_handler = c_signal(10_c_int, sig_handler)
+  call install_signal_handler()
 
   ! main time loop
   ! ~~~~~~~~~~~~~~

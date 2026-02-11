@@ -54,6 +54,7 @@ Program Reducedquintic
   character(len=32) :: mesh_file_name
   logical :: update_mesh
   type(c_funptr) :: sig_handler
+  type(c_funptr) :: old_handler
   ! Initialize MPI
 #ifdef _OPENMP
   integer :: omp_provided, omp_requested
@@ -364,7 +365,10 @@ Program Reducedquintic
 
   if ((irunaway.ge.1).and.(ra_characteristics.eq.1)) call runaway_advection_initialize
 
-  sig_handler = c_signal(34_c_int, c_funloc(handle_signal))
+  checkpoint_flag = .false.
+  writing_output = .false.
+  !sig_handler = c_funloc(handle_signal)
+  !old_handler = c_signal(10_c_int, sig_handler)
 
   ! main time loop
   ! ~~~~~~~~~~~~~~

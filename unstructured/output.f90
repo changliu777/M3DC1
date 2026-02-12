@@ -162,6 +162,14 @@ contains
             ntime, time, ekin, gamma_gr, &
             ekinp,ekint,ekin3, emagp, emagt, emag3, etot
     endif
+
+    ! If Slurm is terminating the job, stop code execution after output was written
+    if (checkpoint_flag.eq.1) then
+      if (myrank.eq.0) print *, 'SLURM SIGNAL RECEIVED (SIGUSR1)'
+      if (myrank.eq.0) print *, 'Time limit approaching or job preempted.'
+      if (myrank.eq.0) print *, 'Wrote final time slice before termination.'
+      call safestop(1)
+    endif
   end subroutine output
 
 

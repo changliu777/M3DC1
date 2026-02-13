@@ -461,8 +461,9 @@ subroutine init_particles(lrestart, ierr)
    integer, dimension(:, :), allocatable :: mesh_nodes_temp
    integer :: nelm_row_temp
    integer :: ielm_min_temp, ielm_max_temp
-   integer :: sps
+   integer :: sps, izone
    real :: npar_ratio, npar_ratio_temp, npar_ratio_local, npar_fac
+   real :: bzsign, bzsign_temp
 
    !Allocate particle pressure tensor components
 
@@ -653,11 +654,31 @@ subroutine init_particles(lrestart, ierr)
       f_array_temp=f_array_temp/maxval(f_array_temp)
       allocate(f_array(num_energy,num_pitch,num_r))
       f_array=reshape(f_array_temp,[num_energy,num_pitch,num_r])
-      !allocate(f_array2(num_energy,num_pitch,num_r))
-      !do pitch_i=1,num_pitch
-      !   f_array2(:,pitch_i,:)=f_array(:,1+num_pitch-pitch_i,:)
-      !enddo
-      !f_array=f_array2
+
+      dpar%x(1) = xmag
+      dpar%x(3) = zmag
+      dpar%x(2) = 0.
+      itri = 0
+      bzsign_temp = 0.
+      call get_geom_terms(dpar%x, itri, geomterms, .false., ierr)
+      if (localmeshid(itri)>0) then
+         write(0,*) itri
+         ielm=localmeshid(itri)
+         call get_zone(ielm, izone)
+         call define_element_quadrature(ielm, int_pts_main, int_pts_tor)
+         call define_fields(ielm, FIELD_PSI+FIELD_I, 1, 0)
+         call eval_ops(ielm, psi_field(0), ps079)
+         call eval_ops(ielm, bz_field(0), bz079)
+         bzsign_temp=sum(ps079(:,OP_GS))*sum(bz079(:,OP_1))
+      endif
+      call mpi_allreduce(bzsign_temp, bzsign, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr)
+      if (bzsign>0) then
+         allocate(f_array2(num_energy,num_pitch,num_r))
+         do pitch_i=1,num_pitch
+            f_array2(:,pitch_i,:)=f_array(:,1+num_pitch-pitch_i,:)
+         enddo
+         f_array=f_array2
+      endif
    endif
 
    if (lrestart) then
@@ -3366,9 +3387,11 @@ subroutine particle_pressure_rhs
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)
 #ifndef USECOMPLEX
             coeffspai_local(:, itri) = coeffspai_local(:, itri) + ppar*wnuhere/4
-            ! coeffspai_local(:,itri) = coeffspai_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             coeffspei_local(:, itri) = coeffspei_local(:, itri) + pperp*wnuhere2/4
-            ! coeffspei_local(:,itri) = coeffspei_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            if (ifullf_pressure.eq.1) then
+               coeffspai_local(:,itri) = coeffspai_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+               coeffspei_local(:,itri) = coeffspei_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            endif
             coeffsdei_local(:, itri) = coeffsdei_local(:, itri) + wnuhere/4&
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)
             coeffsvpi_local(:, itri) = coeffsvpi_local(:, itri) + vpar/(v0_norm/100.)*wnuhere/4&
@@ -3383,9 +3406,11 @@ subroutine particle_pressure_rhs
                phfac = exp(-rfac*xtemp(2))
             end if
             coeffspai_local(:, itri) = coeffspai_local(:, itri) + ppar*phfac*wnuhere/4*2
-            !coeffspai_local(:,itri) = coeffspai_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             coeffspei_local(:, itri) = coeffspei_local(:, itri) + pperp*phfac*wnuhere2/4*2
-            !coeffspei_local(:,itri) = coeffspei_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            if (ifullf_pressure.eq.1) then
+               coeffspai_local(:,itri) = coeffspai_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+               coeffspei_local(:,itri) = coeffspei_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            endif
             coeffsdei_local(:, itri) = coeffsdei_local(:, itri) + phfac*wnuhere/4&
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)*2
             coeffsvpi_local(:,itri) = coeffsvpi_local(:,itri) + vpar/(v0_norm/100.)*phfac*wnuhere/4&
@@ -3398,10 +3423,12 @@ subroutine particle_pressure_rhs
             coeffsdef0_local(:,itri) = coeffsdef0_local(:,itri) + geomterms%g*nrmfac(pdata(ipart)%sps)/4&
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)
 #ifndef USECOMPLEX
-            !coeffspaf_local(:,itri) = coeffspaf_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             coeffspaf_local(:, itri) = coeffspaf_local(:, itri) + ppar*wnuhere/4
-            !coeffspef_local(:,itri) = coeffspef_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             coeffspef_local(:, itri) = coeffspef_local(:, itri) + pperp*wnuhere2/4
+            if (ifullf_pressure.eq.1) then
+               coeffspaf_local(:,itri) = coeffspaf_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+               coeffspef_local(:,itri) = coeffspef_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            endif
             coeffsdef_local(:, itri) = coeffsdef_local(:, itri) + wnuhere/4&
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)
             coeffsvpf_local(:, itri) = coeffsvpf_local(:, itri) + vpar/(v0_norm/100.)*wnuhere/4&
@@ -3416,9 +3443,11 @@ subroutine particle_pressure_rhs
                phfac = exp(-rfac*xtemp(2))
             end if
             coeffspaf_local(:, itri) = coeffspaf_local(:, itri) + ppar*phfac*wnuhere/4*2
-            !coeffspaf_local(:,itri) = coeffspaf_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             coeffspef_local(:, itri) = coeffspef_local(:, itri) + pperp*phfac*wnuhere2/4*2
-            !coeffspef_local(:,itri) = coeffspef_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            if (ifullf_pressure.eq.1) then
+               coeffspaf_local(:,itri) = coeffspaf_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+               coeffspef_local(:,itri) = coeffspef_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            endif
             coeffsdef_local(:, itri) = coeffsdef_local(:, itri) + phfac*wnuhere/4&
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)*2
             coeffsvpf_local(:,itri) = coeffsvpf_local(:,itri) + vpar/(v0_norm/100.)*phfac*wnuhere/4&

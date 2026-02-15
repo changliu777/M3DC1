@@ -118,8 +118,8 @@ module particles
    integer :: nelms, nelms_global, nnodes_global
    real :: psi_axis, nf_axis, nfi_axis, toroidal_period_particle
 !$acc declare create(psi_axis, nf_axis, nfi_axis, toroidal_period_particle)
-   integer :: gyroaverage_particle, fast_ion_dist_particle
-!$acc declare create(gyroaverage_particle,fast_ion_dist_particle)
+   integer :: gyroaverage_particle, fast_ion_dist_particle, ifullf_particle
+!$acc declare create(gyroaverage_particle,fast_ion_dist_particle,ifullf_particle)
    real :: fast_ion_max_energy_particle, kinetic_rhomax_particle
 !$acc declare create(fast_ion_max_energy_particle,kinetic_rhomax_particle)
    integer :: num_energy, num_pitch, num_r
@@ -622,6 +622,7 @@ subroutine init_particles(lrestart, ierr)
    particle_linear_particle = particle_linear
    toroidal_period_particle = toroidal_period
    gyroaverage_particle = igyroaverage
+   ifullf_particle = ifullf
    iconst_f0_particle = iconst_f0
    psubsteps_particle = particle_substeps
    kinetic_thermal_ion_particle=kinetic_thermal_ion
@@ -1040,7 +1041,7 @@ subroutine init_particles(lrestart, ierr)
 !$acc update device(m_ion,q_ion,qm_ion)
 !$acc update device(dt_particle,t0_norm_particle,v0_norm_particle,b0_norm_particle,rfac_particle)
 !$acc update device(particle_linear_particle,psi_axis,nf_axis,nfi_axis,toroidal_period_particle)
-!$acc update device(gyroaverage_particle,psubsteps_particle,iconst_f0_particle,kinetic_rhomax_particle)
+!$acc update device(gyroaverage_particle,psubsteps_particle,ifullf_particle,iconst_f0_particle,kinetic_rhomax_particle)
 !$acc update device(kinetic_thermal_ion_particle,fast_ion_dist_particle,fast_ion_max_energy_particle)
       if ((kinetic_fast_ion.eq.1).and.(fast_ion_dist.eq.0)) then
 !$acc update device(num_energy,num_pitch,num_r) async(blocky)
@@ -1252,13 +1253,15 @@ subroutine rk4(part, dt, last_step, ierr)
    if (ierr .eq. 1) return
    part%x = part%x + onethird*dt*(k2 + k3 + 0.5*(k1 + k4))
    part%v = part%v + onethird*dt*(l2 + l3 + 0.5*(l1 + l4))
-   part%wt = part%wt + onethird*dt*(m2 + m3 + 0.5*(m1 + m4))
-   if ((.not. particle_linear_particle .eq. 1) .and. (part%wt < -1.)) then
-      part%wt = 0.
-   end if
-   if ((.not. particle_linear_particle .eq. 1) .and. (part%wt > 1.)) then
-      part%wt = 0.
-   end if
+   if (ifullf_particle.eq.0) then
+      part%wt = part%wt + onethird*dt*(m2 + m3 + 0.5*(m1 + m4))
+      if ((.not. particle_linear_particle .eq. 1) .and. (part%wt < -1.)) then
+         part%wt = 0.
+      end if
+      if ((.not. particle_linear_particle .eq. 1) .and. (part%wt > 1.)) then
+         part%wt = 0.
+      end if
+   endif
    !if ((abs(part%wt) > 0.05)) then
    !   part%wt = 0.
    !   !ierr=1
@@ -1760,6 +1763,7 @@ subroutine fdot(x, v, w, dxdt, dvdt, dwdt, dEpdt, itri, kel, f00, ierr, sps, B00
       dvdt(2) = 0. !magnetic moment is conserved.
    end if
 
+   if (ifullf_particle.eq.0) then
    !Weights evolve in delta-f method only.
    ! V1 = (ExB)/(B**2) + U deltaB/B
    ! weqv1(1) = ((E_cyl(2)*B_cyl(3) - E_cyl(3)*B_cyl(2))*B0inv + 0*v(1)*deltaB(1))*B0inv
@@ -1878,7 +1882,8 @@ subroutine fdot(x, v, w, dxdt, dvdt, dwdt, dEpdt, itri, kel, f00, ierr, sps, B00
    !dwdt = dwdt * f00
    !else
    !dwdt = dwdt * (f00-w)
-   !endif
+   !endif  
+   endif
    if (particle_linear_particle .eq. 0) then
       !dwdt = dwdt*(1 - w)
       !dEpdt = dEpdt *(w+(1-w)*dot_product(deltaB,bhat)*B0inv)
@@ -3404,9 +3409,10 @@ subroutine particle_pressure_rhs
             coeffsdei0_local(:,itri) = coeffsdei0_local(:,itri) + geomterms%g*nrmfac(pdata(ipart)%sps)/4&
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)
 #ifndef USECOMPLEX
-            coeffspai_local(:, itri) = coeffspai_local(:, itri) + ppar*wnuhere/4
-            coeffspei_local(:, itri) = coeffspei_local(:, itri) + pperp*wnuhere2/4
-            if (ifullf_pressure.eq.1) then
+            if (ifullf.eq.0) then
+               coeffspai_local(:, itri) = coeffspai_local(:, itri) + ppar*wnuhere/4
+               coeffspei_local(:, itri) = coeffspei_local(:, itri) + pperp*wnuhere2/4
+            else
                coeffspai_local(:,itri) = coeffspai_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
                coeffspei_local(:,itri) = coeffspei_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             endif
@@ -3423,9 +3429,10 @@ subroutine particle_pressure_rhs
             else
                phfac = exp(-rfac*xtemp(2))
             end if
-            coeffspai_local(:, itri) = coeffspai_local(:, itri) + ppar*phfac*wnuhere/4*2
-            coeffspei_local(:, itri) = coeffspei_local(:, itri) + pperp*phfac*wnuhere2/4*2
-            if (ifullf_pressure.eq.1) then
+            if (ifullf.eq.0) then
+               coeffspai_local(:, itri) = coeffspai_local(:, itri) + ppar*phfac*wnuhere/4*2
+               coeffspei_local(:, itri) = coeffspei_local(:, itri) + pperp*phfac*wnuhere2/4*2
+            else
                coeffspai_local(:,itri) = coeffspai_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
                coeffspei_local(:,itri) = coeffspei_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             endif
@@ -3441,9 +3448,10 @@ subroutine particle_pressure_rhs
             coeffsdef0_local(:,itri) = coeffsdef0_local(:,itri) + geomterms%g*nrmfac(pdata(ipart)%sps)/4&
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)
 #ifndef USECOMPLEX
-            coeffspaf_local(:, itri) = coeffspaf_local(:, itri) + ppar*wnuhere/4
-            coeffspef_local(:, itri) = coeffspef_local(:, itri) + pperp*wnuhere2/4
-            if (ifullf_pressure.eq.1) then
+            if (ifullf.eq.0) then
+               coeffspaf_local(:, itri) = coeffspaf_local(:, itri) + ppar*wnuhere/4
+               coeffspef_local(:, itri) = coeffspef_local(:, itri) + pperp*wnuhere2/4
+            else
                coeffspaf_local(:,itri) = coeffspaf_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
                coeffspef_local(:,itri) = coeffspef_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             endif
@@ -3460,9 +3468,10 @@ subroutine particle_pressure_rhs
             else
                phfac = exp(-rfac*xtemp(2))
             end if
-            coeffspaf_local(:, itri) = coeffspaf_local(:, itri) + ppar*phfac*wnuhere/4*2
-            coeffspef_local(:, itri) = coeffspef_local(:, itri) + pperp*phfac*wnuhere2/4*2
-            if (ifullf_pressure.eq.1) then
+            if (ifullf.eq.0) then
+               coeffspaf_local(:, itri) = coeffspaf_local(:, itri) + ppar*phfac*wnuhere/4*2
+               coeffspef_local(:, itri) = coeffspef_local(:, itri) + pperp*phfac*wnuhere2/4*2
+            else
                coeffspaf_local(:,itri) = coeffspaf_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
                coeffspef_local(:,itri) = coeffspef_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             endif

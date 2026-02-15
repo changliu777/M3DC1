@@ -1268,8 +1268,8 @@ subroutine set_defaults
        "Do not call delete_particle, keep particles' order", particle_grp)
   call add_var_int("iconst_f0", iconst_f0, 0, &
        "Use a constant f0 for delta-f equation", particle_grp)
-  call add_var_int("ifullf_pressure", ifullf_pressure, 0, &
-       "Output the full-f particle pressure", particle_grp)
+  call add_var_int("ifullf", ifullf, 0, &
+       "Do full-f simulation", particle_grp)
   call add_var_double("fast_ion_mass", fast_ion_mass, 0., &
        "Fast ion mass (in units of m_p)", particle_grp)
   call add_var_double("fast_ion_z", fast_ion_z, 0., &
@@ -1747,6 +1747,10 @@ subroutine validate_input
 
 #ifdef USEPARTICLES
   if(particle_linear.eq.-1) particle_linear=linear
+
+  if(eqsubtract.eq.0) ifullf=1
+
+  if(ifullf.eq.1) particle_linear=0
 
   if(fast_ion_mass.eq.0) fast_ion_mass=ion_mass
 

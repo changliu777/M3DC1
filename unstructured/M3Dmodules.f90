@@ -319,7 +319,7 @@ module basic
   integer :: particle_couple
   integer :: particle_nodelete
   integer :: iconst_f0
-  integer :: ifullf_pressure
+  integer :: ifullf
   real :: fast_ion_mass, fast_ion_z
   integer :: fast_ion_dist
   real :: fast_ion_max_energy

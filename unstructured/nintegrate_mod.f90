@@ -412,7 +412,7 @@ subroutine define_boundary_quadrature(ielm, iedge, npol, ntor, normal, idim)
   ! Set normal vector of corner nodes
   ! equal to the the normal vector of its adjacent node on this edge.
   if(idim(iedge).eq.0 .and. idim(mod(iedge,3)+1).eq.0) then
-     print *, 'Dropping double cusp'
+     ! print *, 'Dropping double cusp'
      n1 = 0.
      n2 = 0.
   else

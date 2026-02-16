@@ -461,8 +461,10 @@ subroutine init_particles(lrestart, ierr)
    integer, dimension(:, :), allocatable :: mesh_nodes_temp
    integer :: nelm_row_temp
    integer :: ielm_min_temp, ielm_max_temp
-   integer :: sps
+   integer :: sps, izone
    real :: npar_ratio, npar_ratio_temp, npar_ratio_local, npar_fac
+   integer :: npar_temp, npar_temp_sum, i_npar_test
+   real :: bzsign, bzsign_temp
 
    !Allocate particle pressure tensor components
 
@@ -653,11 +655,31 @@ subroutine init_particles(lrestart, ierr)
       f_array_temp=f_array_temp/maxval(f_array_temp)
       allocate(f_array(num_energy,num_pitch,num_r))
       f_array=reshape(f_array_temp,[num_energy,num_pitch,num_r])
-      !allocate(f_array2(num_energy,num_pitch,num_r))
-      !do pitch_i=1,num_pitch
-      !   f_array2(:,pitch_i,:)=f_array(:,1+num_pitch-pitch_i,:)
-      !enddo
-      !f_array=f_array2
+
+      dpar%x(1) = xmag
+      dpar%x(3) = zmag
+      dpar%x(2) = 0.
+      itri = 0
+      bzsign_temp = 0.
+      call get_geom_terms(dpar%x, itri, geomterms, .false., ierr)
+      if (localmeshid(itri)>0) then
+         write(0,*) itri
+         ielm=localmeshid(itri)
+         call get_zone(ielm, izone)
+         call define_element_quadrature(ielm, int_pts_main, int_pts_tor)
+         call define_fields(ielm, FIELD_PSI+FIELD_I, 1, 0)
+         call eval_ops(ielm, psi_field(0), ps079)
+         call eval_ops(ielm, bz_field(0), bz079)
+         bzsign_temp=sum(ps079(:,OP_GS))*sum(bz079(:,OP_1))
+      endif
+      call mpi_allreduce(bzsign_temp, bzsign, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr)
+      if (bzsign>0) then
+         allocate(f_array2(num_energy,num_pitch,num_r))
+         do pitch_i=1,num_pitch
+            f_array2(:,pitch_i,:)=f_array(:,1+num_pitch-pitch_i,:)
+         enddo
+         f_array=f_array2
+      endif
    endif
 
    if (lrestart) then
@@ -684,56 +706,66 @@ subroutine init_particles(lrestart, ierr)
       do sps = 1,2
          if ((sps==1).and.(kinetic_thermal_ion==0)) cycle
          if ((sps==2).and.(kinetic_fast_ion==0)) cycle
-         npar_ratio=0.
 
-      do ielm = 1, nelms
-#ifdef USE3D
-         call m3dc1_ent_getglobalid(3, ielm - 1, itri)
-#else
-         call m3dc1_ent_getglobalid(2, ielm - 1, itri)
-#endif
-         itri = itri + 1
-         x_min = minval(mesh_coord(1, :, itri))
-         x_max = maxval(mesh_coord(1, :, itri))
-         phi_min = mesh_coord(2, 1, itri)
-         phi_max = mesh_coord(2, 4, itri)
-         if (phi_max == 0) phi_max = toroidal_period
-         z_min = minval(mesh_coord(3, :, itri))
-         z_max = maxval(mesh_coord(3, :, itri))
+      !do ielm = 1, nelms
+!#ifdef USE3D
+      !   call m3dc1_ent_getglobalid(3, ielm - 1, itri)
+!#else
+      !   call m3dc1_ent_getglobalid(2, ielm - 1, itri)
+!#endif
+      !   itri = itri + 1
+      !   x_min = minval(mesh_coord(1, :, itri))
+      !   x_max = maxval(mesh_coord(1, :, itri))
+      !   phi_min = mesh_coord(2, 1, itri)
+      !   phi_max = mesh_coord(2, 4, itri)
+      !   if (phi_max == 0) phi_max = toroidal_period
+      !   z_min = minval(mesh_coord(3, :, itri))
+      !   z_max = maxval(mesh_coord(3, :, itri))
 
-         area=tri_area(mesh_coord(1,1,itri),mesh_coord(3,1,itri),mesh_coord(1,2,itri),&
-            mesh_coord(3,2,itri),mesh_coord(1,3,itri),mesh_coord(3,3,itri))
-#ifdef USE3D
-         dpar%x = (mesh_coord(:, 1, itri) + mesh_coord(:, 2, itri) + mesh_coord(:, 3, itri) + &
-            & mesh_coord(:, 4, itri) + mesh_coord(:, 5, itri) + mesh_coord(:, 6, itri))/6.
-#else
-         dpar%x = (mesh_coord(:, 1, itri) + mesh_coord(:, 2, itri) + mesh_coord(:, 3, itri))/3.
-#endif
-         call get_geom_terms(dpar%x, itri, geomterms, .false., ierr)
-#ifdef USEST
-         di = 1./(dot_product(elfieldcoefs(itri)%rst,geomterms%dr)*dot_product(elfieldcoefs(itri)%zst,geomterms%dz)&
-            - dot_product(elfieldcoefs(itri)%zst,geomterms%dr)*dot_product(elfieldcoefs(itri)%rst,geomterms%dz))
-         call update_geom_terms_st(geomterms, elfieldcoefs(itri), .false.)
-#endif
-         if (sps==1) then
-            f_mesh = dot_product(elfieldcoefs(itri)%nfi,geomterms%g)/nfi_axis
+      !   area=tri_area(mesh_coord(1,1,itri),mesh_coord(3,1,itri),mesh_coord(1,2,itri),&
+      !      mesh_coord(3,2,itri),mesh_coord(1,3,itri),mesh_coord(3,3,itri))
+!#ifdef USE3D
+      !   dpar%x = (mesh_coord(:, 1, itri) + mesh_coord(:, 2, itri) + mesh_coord(:, 3, itri) + &
+      !      & mesh_coord(:, 4, itri) + mesh_coord(:, 5, itri) + mesh_coord(:, 6, itri))/6.
+!#else
+      !   dpar%x = (mesh_coord(:, 1, itri) + mesh_coord(:, 2, itri) + mesh_coord(:, 3, itri))/3.
+!#endif
+      !   call get_geom_terms(dpar%x, itri, geomterms, .false., ierr)
+!#ifdef USEST
+      !   di = 1./(dot_product(elfieldcoefs(itri)%rst,geomterms%dr)*dot_product(elfieldcoefs(itri)%zst,geomterms%dz)&
+      !      - dot_product(elfieldcoefs(itri)%zst,geomterms%dr)*dot_product(elfieldcoefs(itri)%rst,geomterms%dz))
+      !   call update_geom_terms_st(geomterms, elfieldcoefs(itri), .false.)
+!#endif
+      !   if (sps==1) then
+      !      f_mesh = dot_product(elfieldcoefs(itri)%nfi,geomterms%g)/nfi_axis
+      !   else
+      !      f_mesh = dot_product(elfieldcoefs(itri)%nf,geomterms%g)/nf_axis
+      !   endif
+!#ifdef USEST
+      !   !npar_ratio_local=(x_max-x_min)*(dot_product(elfieldcoefs(itri)%rst,geomterms%g)/R_axis)/(di/di_axis)*(z_max-z_min)*f_mesh*2/nplanes
+      !   npar_ratio_local=area*(dot_product(elfieldcoefs(itri)%rst,geomterms%g)/R_axis)/(di/di_axis)*f_mesh*2/nplanes
+!#else
+      !   npar_ratio_local = area*(x_max + x_min)/2.*f_mesh*2/nplanes
+!#endif
+      !   npar_ratio=npar_ratio+npar_ratio_local
+      !end do
+      !npar_ratio_temp=npar_ratio
+      !call mpi_allreduce(npar_ratio_temp, npar_ratio, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr)
+      !npar_fac=0.95/npar_ratio*num_par_scale(sps)
+      !if ((kinetic_fast_ion.eq.1).and.(kinetic_thermal_ion.eq.1)) then
+      !   npar_fac=npar_fac*0.5
+      !endif
+
+      do i_npar_test=1,2
+         if (i_npar_test.eq.1) then
+            npar_fac=1.
+            npar_temp=0
          else
-            f_mesh = dot_product(elfieldcoefs(itri)%nf,geomterms%g)/nf_axis
+            npar_fac=0.95*num_par_max/npar_temp_sum*num_par_scale(sps)
+            if ((kinetic_fast_ion.eq.1).and.(kinetic_thermal_ion.eq.1)) then
+               npar_fac=npar_fac*0.5
+            endif
          endif
-#ifdef USEST
-         !npar_ratio_local=(x_max-x_min)*(dot_product(elfieldcoefs(itri)%rst,geomterms%g)/R_axis)/(di/di_axis)*(z_max-z_min)*f_mesh*2/nplanes
-         npar_ratio_local=area*(dot_product(elfieldcoefs(itri)%rst,geomterms%g)/R_axis)/(di/di_axis)*f_mesh*2/nplanes
-#else
-         npar_ratio_local = area*(x_max + x_min)/2.*f_mesh*2/nplanes
-#endif
-         npar_ratio=npar_ratio+npar_ratio_local
-      end do
-      npar_ratio_temp=npar_ratio
-      call mpi_allreduce(npar_ratio_temp, npar_ratio, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr)
-      npar_fac=0.95/npar_ratio*num_par_scale(sps)
-      if ((kinetic_fast_ion.eq.1).and.(kinetic_thermal_ion.eq.1)) then
-         npar_fac=npar_fac*0.5
-      endif
  
       do ielm = 1, nelms
 #ifdef USE3D
@@ -770,6 +802,8 @@ subroutine init_particles(lrestart, ierr)
 #endif
          if (sps==1) then
             f_mesh = dot_product(elfieldcoefs(itri)%nfi,geomterms%g)/nfi_axis
+         elseif (fast_ion_dist.eq.0) then
+            f_mesh = 1.
          else
             f_mesh = dot_product(elfieldcoefs(itri)%nf,geomterms%g)/nf_axis
          endif
@@ -779,9 +813,9 @@ subroutine init_particles(lrestart, ierr)
 #else
          npar_local = int(num_par_max*area*(x_max + x_min)/2.*f_mesh*2/nplanes*npar_fac)!fullf
 #endif
-         ipar = 1
-         do while (ipar<=npar_local)
-         !do ipar=1,npar_local
+         !ipar = 1
+         !do while (ipar<=npar_local)
+         do ipar=1,npar_local
             call random_number(ran_temp)
 #ifdef USEST
             x_temp = ran_temp*(x_max-x_min)+x_min
@@ -950,11 +984,16 @@ subroutine init_particles(lrestart, ierr)
                dpar%kx(:, ipoint) = dpar%x
             end do
             dpar%deleted = .false.
-            locparts = locparts + 1
             dpar%gid = itri*10000 + ipar
-            pdata_local(locparts) = dpar
-            ipar = ipar + 1
+            if (i_npar_test.eq.2) then
+               locparts = locparts + 1
+               pdata_local(locparts) = dpar
+            endif
+            npar_temp = npar_temp + 1
+            !ipar = ipar + 1
          end do !iz
+      end do
+      if (i_npar_test.eq.1) call mpi_allreduce(npar_temp, npar_temp_sum, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
       end do
       end do
 
@@ -3366,9 +3405,11 @@ subroutine particle_pressure_rhs
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)
 #ifndef USECOMPLEX
             coeffspai_local(:, itri) = coeffspai_local(:, itri) + ppar*wnuhere/4
-            ! coeffspai_local(:,itri) = coeffspai_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             coeffspei_local(:, itri) = coeffspei_local(:, itri) + pperp*wnuhere2/4
-            ! coeffspei_local(:,itri) = coeffspei_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            if (ifullf_pressure.eq.1) then
+               coeffspai_local(:,itri) = coeffspai_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+               coeffspei_local(:,itri) = coeffspei_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            endif
             coeffsdei_local(:, itri) = coeffsdei_local(:, itri) + wnuhere/4&
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)
             coeffsvpi_local(:, itri) = coeffsvpi_local(:, itri) + vpar/(v0_norm/100.)*wnuhere/4&
@@ -3383,9 +3424,11 @@ subroutine particle_pressure_rhs
                phfac = exp(-rfac*xtemp(2))
             end if
             coeffspai_local(:, itri) = coeffspai_local(:, itri) + ppar*phfac*wnuhere/4*2
-            !coeffspai_local(:,itri) = coeffspai_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             coeffspei_local(:, itri) = coeffspei_local(:, itri) + pperp*phfac*wnuhere2/4*2
-            !coeffspei_local(:,itri) = coeffspei_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            if (ifullf_pressure.eq.1) then
+               coeffspai_local(:,itri) = coeffspai_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+               coeffspei_local(:,itri) = coeffspei_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            endif
             coeffsdei_local(:, itri) = coeffsdei_local(:, itri) + phfac*wnuhere/4&
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)*2
             coeffsvpi_local(:,itri) = coeffsvpi_local(:,itri) + vpar/(v0_norm/100.)*phfac*wnuhere/4&
@@ -3398,10 +3441,12 @@ subroutine particle_pressure_rhs
             coeffsdef0_local(:,itri) = coeffsdef0_local(:,itri) + geomterms%g*nrmfac(pdata(ipart)%sps)/4&
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)
 #ifndef USECOMPLEX
-            !coeffspaf_local(:,itri) = coeffspaf_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             coeffspaf_local(:, itri) = coeffspaf_local(:, itri) + ppar*wnuhere/4
-            !coeffspef_local(:,itri) = coeffspef_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             coeffspef_local(:, itri) = coeffspef_local(:, itri) + pperp*wnuhere2/4
+            if (ifullf_pressure.eq.1) then
+               coeffspaf_local(:,itri) = coeffspaf_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+               coeffspef_local(:,itri) = coeffspef_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            endif
             coeffsdef_local(:, itri) = coeffsdef_local(:, itri) + wnuhere/4&
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)
             coeffsvpf_local(:, itri) = coeffsvpf_local(:, itri) + vpar/(v0_norm/100.)*wnuhere/4&
@@ -3416,9 +3461,11 @@ subroutine particle_pressure_rhs
                phfac = exp(-rfac*xtemp(2))
             end if
             coeffspaf_local(:, itri) = coeffspaf_local(:, itri) + ppar*phfac*wnuhere/4*2
-            !coeffspaf_local(:,itri) = coeffspaf_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
             coeffspef_local(:, itri) = coeffspef_local(:, itri) + pperp*phfac*wnuhere2/4*2
-            !coeffspef_local(:,itri) = coeffspef_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            if (ifullf_pressure.eq.1) then
+               coeffspaf_local(:,itri) = coeffspaf_local(:,itri) + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+               coeffspef_local(:,itri) = coeffspef_local(:,itri) + pperp*geomterms%g*nrmfac(pdata(ipart)%sps)/4
+            endif
             coeffsdef_local(:, itri) = coeffsdef_local(:, itri) + phfac*wnuhere/4&
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)*2
             coeffsvpf_local(:,itri) = coeffsvpf_local(:,itri) + vpar/(v0_norm/100.)*phfac*wnuhere/4&

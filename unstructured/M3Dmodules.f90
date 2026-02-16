@@ -225,6 +225,7 @@ module basic
   integer :: igs_extend_p ! extend p past psi=1 using te and ne profiles
   integer :: igs_extend_diamag ! extend diamagnetic rotation past psi=1
   integer :: nv1equ   ! if set to 1, use numvar equilibrium for numvar > 1
+  real    :: psifrac
   real :: xmag, zmag  ! position of magnetic axis
 #ifdef USEST
   real :: xmagp, zmagp  ! physical position of magnetic axis
@@ -318,6 +319,7 @@ module basic
   integer :: particle_couple
   integer :: particle_nodelete
   integer :: iconst_f0
+  integer :: ifullf_pressure
   real :: fast_ion_mass, fast_ion_z
   integer :: fast_ion_dist
   real :: fast_ion_max_energy

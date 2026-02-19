@@ -1108,8 +1108,8 @@ subroutine output_fields(time_group_id, equilibrium, error)
   end if
 
 #ifdef USEPARTICLES
+  call write_field(group_id, "rhof", rho_field, nelms, error)
   if (kinetic.eq.1) then
-     call write_field(group_id, "rhof", rho_field, nelms, error)
      call write_field(group_id, "nf",   nf_field, nelms, error)
      call write_field(group_id, "tf",   tf_field, nelms, error)
      call write_field(group_id, "pf",   pf_field, nelms, error)

@@ -669,6 +669,7 @@ subroutine set_defaults
   call add_var_double("zlim2", zlim2, 0., &
        "Z-coordinate of limiter #2", gs_grp)
   call add_var_double("rzero", rzero, -1., "", gs_grp)
+  call add_var_double("psifrac", psifrac, 1., "Fraction of poloidal flux from psimin to psibound used for the mesh", gs_grp)
   call add_var_double("libetap", libetap, 1.2, "", gs_grp)
   call add_var_double("p0", p0, 0.01, "", gs_grp)
   call add_var_double("pi0", pi0, 0.005, "", gs_grp)
@@ -1267,6 +1268,8 @@ subroutine set_defaults
        "Do not call delete_particle, keep particles' order", particle_grp)
   call add_var_int("iconst_f0", iconst_f0, 0, &
        "Use a constant f0 for delta-f equation", particle_grp)
+  call add_var_int("ifullf_pressure", ifullf_pressure, 0, &
+       "Output the full-f particle pressure", particle_grp)
   call add_var_double("fast_ion_mass", fast_ion_mass, 0., &
        "Fast ion mass (in units of m_p)", particle_grp)
   call add_var_double("fast_ion_z", fast_ion_z, 0., &

@@ -13,7 +13,7 @@ def plot_flux_contour(fval, *, filename="C1.h5", points=200, slice=0, overplot=F
     vals = np.asarray(fval, dtype=float).reshape(-1)
     if vals.size == 0:
         return
-    p = read_field("psi", filename=filename, slices=slice, points=points, equilibrium=True, return_meta=True, **kwargs)
+    p = read_field("psi", filename=filename, timeslices=slice, points=points, equilibrium=True, return_meta=True, **kwargs)
     psi = np.asarray(p.data)
     psi2d = psi[0, :, :] if psi.ndim == 3 else psi
     x = np.asarray(p.r, dtype=float).reshape(-1)

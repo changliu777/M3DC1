@@ -38,11 +38,18 @@ def _save_xy(path: str | Path, xx: np.ndarray, yy: np.ndarray) -> None:
     np.savetxt(str(path), np.column_stack([x[:n], y[:n]]), fmt="%16.6e")
 
 
+def _primary_timeslice(timeslices) -> int:
+    if isinstance(timeslices, (list, tuple, np.ndarray)):
+        arr = np.asarray(timeslices).reshape(-1)
+        if arr.size == 0:
+            return 0
+        return int(arr[0])
+    return int(timeslices)
+
+
 def plot_field(
     name,
-    time=0,
-    x=None,
-    y=None,
+    timeslices=0,
     *,
     points: int = 200,
     mesh=None,
@@ -65,6 +72,7 @@ def plot_field(
     q_contours=None,
     overplot: bool = False,
     phi: float = 0.0,
+    logical: bool = False,
     realtime=None,
     levels=None,
     phase: bool = False,
@@ -84,8 +92,12 @@ def plot_field(
     """
     Python port of plot_field.pro.
     """
-    if time is None:
-        time = 0
+    if timeslices is None:
+        timeslices = 0
+    if "time" in kwargs:
+        raise TypeError("plot_field() got an unexpected keyword argument 'time'. Use 'timeslices'.")
+    if "x" in kwargs or "y" in kwargs:
+        raise TypeError("plot_field() no longer accepts 'x'/'y' arguments.")
     if cmap is None and "cmap" in kwargs:
         cmap = kwargs.pop("cmap")
     notitle = title is None
@@ -97,41 +109,38 @@ def plot_field(
     if "mks" in read_kwargs:
         label_kwargs["mks"] = read_kwargs["mks"]
 
+    main_timeslices = timeslices
+    primary_slice = _primary_timeslice(timeslices)
+
     complex_flag = bool(phase or abs)
-    if isinstance(name, str):
-        meta = read_field(
-            name,
-            slices=int(time),
-            points=points,
-            rrange=rrange,
-            zrange=zrange,
-            linear=linear,
-            phi=phi,
-            operation=operation,
-            complex=complex_flag,
-            filename=filename,
-            linfac=linfac,
-            fac=fac,
-            return_meta=True,
-            **read_kwargs,
-        )
-        field = np.asarray(meta.data)
-        xvec = np.asarray(meta.r, dtype=float).reshape(-1)
-        yvec = np.asarray(meta.z, dtype=float).reshape(-1)
-        mask = meta.mask
-        fieldname = str(meta.symbol)
-        if units is None:
-            units = str(meta.units)
-        if realtime is None:
-            realtime = meta.time
-    else:
-        field = np.asarray(name)
-        if x is None or y is None:
-            raise ValueError("x and y grids are required when passing raw field data.")
-        xvec = np.asarray(x, dtype=float).reshape(-1)
-        yvec = np.asarray(y, dtype=float).reshape(-1)
-        fieldname = "field"
-        mask = None
+    if not isinstance(name, str):
+        raise TypeError("plot_field expects field name as string.")
+    meta = read_field(
+        name,
+        timeslices=main_timeslices,
+        points=points,
+        rrange=rrange,
+        zrange=zrange,
+        linear=linear,
+        phi=phi,
+        logical=logical,
+        operation=operation,
+        complex=complex_flag,
+        filename=filename,
+        linfac=linfac,
+        fac=fac,
+        return_meta=True,
+        **read_kwargs,
+    )
+    field = np.asarray(meta.data)
+    xvec = np.asarray(meta.r, dtype=float).reshape(-1)
+    yvec = np.asarray(meta.z, dtype=float).reshape(-1)
+    mask = meta.mask
+    fieldname = str(meta.symbol)
+    if units is None:
+        units = str(meta.units)
+    if realtime is None:
+        realtime = meta.time
 
     f3 = _as_3d(field)
 
@@ -171,7 +180,7 @@ def plot_field(
         data = field_at_point(f3[0, :, :], xvec, yvec, np.full_like(yy, xv), yy)
         xtitle = make_label("Z", l0=1, **kwargs)
         if psin:
-            psi = read_field("psi_norm", slices=int(time), points=points, equilibrium=True, filename=filename, **read_kwargs)
+            psi = read_field("psi_norm", timeslices=main_timeslices, points=points, equilibrium=True, logical=logical, filename=filename, **read_kwargs)
             yy = np.asarray(field_at_point(np.asarray(psi)[0, :, :], xvec, yvec, np.full_like(yvec, xv), yvec), dtype=float)
         if not overplot:
             plt.figure(figsize=(7, 4))
@@ -193,7 +202,7 @@ def plot_field(
         data = field_at_point(f3[0, :, :], xvec, yvec, xx, np.full_like(xx, zv))
         xtitle = make_label("R", l0=1, **kwargs)
         if psin:
-            psi = read_field("psi_norm", slices=int(time), points=points, equilibrium=True, filename=filename, **read_kwargs)
+            psi = read_field("psi_norm", timeslices=main_timeslices, points=points, equilibrium=True, logical=logical, filename=filename, **read_kwargs)
             xx = np.asarray(field_at_point(np.asarray(psi)[0, :, :], xvec, yvec, xvec, np.full_like(xvec, zv)), dtype=float)
         if not overplot:
             plt.figure(figsize=(7, 4))
@@ -210,8 +219,19 @@ def plot_field(
         return ax.figure, ax
 
     if magcoord:
-        psi = read_field("psi", slices=int(time), points=points, equilibrium=True, filename=filename, **read_kwargs)
-        mapped = flux_coord_field(f3, np.asarray(psi), xvec, yvec, time, fbins=points, tbins=points, filename=filename, slice=int(time), **plot_kwargs)
+        psi = read_field("psi", timeslices=main_timeslices, points=points, equilibrium=True, logical=logical, filename=filename, **read_kwargs)
+        mapped = flux_coord_field(
+            f3,
+            np.asarray(psi),
+            xvec,
+            yvec,
+            primary_slice,
+            fbins=points,
+            tbins=points,
+            filename=filename,
+            slice=primary_slice,
+            **plot_kwargs,
+        )
         angle = np.linspace(0.0, 360.0, int(points))
         nflux = np.linspace(0.0, 1.0, int(points))
         contour_and_legend(
@@ -252,27 +272,45 @@ def plot_field(
     show_mesh = bool(mesh) if isinstance(mesh, bool) else (mesh is not None)
 
     if boundary:
-        plot_mesh(mesh=mesh_obj, oplot=True, boundary=True, filename=filename, slice=int(time), **plot_kwargs)
+        plot_mesh(
+            mesh=mesh_obj,
+            oplot=True,
+            boundary=True,
+            logical=logical,
+            phi=phi,
+            filename=filename,
+            slice=primary_slice,
+            **plot_kwargs,
+        )
     elif show_mesh:
-        plot_mesh(mesh=mesh_obj, oplot=True, boundary=False, filename=filename, slice=int(time), **plot_kwargs)
+        plot_mesh(
+            mesh=mesh_obj,
+            oplot=True,
+            boundary=False,
+            logical=logical,
+            phi=phi,
+            filename=filename,
+            slice=primary_slice,
+            **plot_kwargs,
+        )
 
     if wall_regions:
-        plot_wall_regions(filename=filename, slice=int(time), over=True, **plot_kwargs)
+        plot_wall_regions(filename=filename, slice=primary_slice, over=True, **plot_kwargs)
 
     if q_contours is not None:
         fval = flux_at_q(q_contours, points=points, filename=filename, **plot_kwargs)
         if np.asarray(fval).size > 0 and float(np.asarray(fval).reshape(-1)[0]) != 0.0:
-            plot_flux_contour(fval, points=points, overplot=True, filename=filename, slice=int(time), **plot_kwargs)
+            plot_flux_contour(fval, points=points, overplot=True, filename=filename, slice=primary_slice, **plot_kwargs)
 
     if axis:
-        ax, _ = nulls(axis=True, xpoints=True, filename=filename, slice=int(time), **plot_kwargs)
+        ax, _ = nulls(axis=True, xpoints=True, filename=filename, slice=primary_slice, **plot_kwargs)
         dx = (xvec.max() - xvec.min()) / 50.0
         dy = (yvec.max() - yvec.min()) / 50.0
         plt.plot([ax[0] - dx, ax[0] + dx], [ax[1] - dy, ax[1] + dy], color="tab:red")
         plt.plot([ax[0] - dx, ax[0] + dx], [ax[1] + dy, ax[1] - dy], color="tab:red")
 
     if lcfs:
-        plot_lcfs(over=True, filename=filename, slice=int(time), points=points, **plot_kwargs)
+        plot_lcfs(over=True, filename=filename, slice=primary_slice, points=points, **plot_kwargs)
 
     if coils:
         plot_coils(filename=filename, overplot=True, **plot_kwargs)

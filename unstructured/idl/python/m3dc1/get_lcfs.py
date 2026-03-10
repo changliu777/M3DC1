@@ -12,7 +12,7 @@ def get_lcfs(psi=None, x=None, z=None, *, psival=None, axis=None, filename="C1.h
     Return an approximate LCFS contour path as shape (2, N).
     """
     if psi is None or x is None or z is None:
-        pmeta = read_field("psi", filename=filename, slices=slice, points=points, equilibrium=True, return_meta=True, **kwargs)
+        pmeta = read_field("psi", filename=filename, timeslices=slice, points=points, equilibrium=True, return_meta=True, **kwargs)
         psi2d = np.asarray(pmeta.data)[0, :, :] if np.asarray(pmeta.data).ndim == 3 else np.asarray(pmeta.data)
         xv = np.asarray(pmeta.r, dtype=float).reshape(-1)
         zv = np.asarray(pmeta.z, dtype=float).reshape(-1)

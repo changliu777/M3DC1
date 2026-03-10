@@ -24,13 +24,13 @@ def get_slice_time(
 
     if slice is None:
         nt = int(read_parameter("ntime", filename=filename))
-        slices = np.arange(nt, dtype=int)
+        timeslices = np.arange(nt, dtype=int)
     else:
-        slices = np.atleast_1d(np.asarray(slice, dtype=int))
+        timeslices = np.atleast_1d(np.asarray(slice, dtype=int))
 
-    out = np.zeros(slices.size, dtype=float)
+    out = np.zeros(timeslices.size, dtype=float)
     with h5py.File(str(filename), "r") as h5:
-        for i, s in enumerate(slices):
+        for i, s in enumerate(timeslices):
             gname = time_name(int(s))
             if gname not in h5:
                 raise KeyError(f"Missing group '{gname}' in file.")

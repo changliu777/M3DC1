@@ -14,6 +14,7 @@ from .get_slice_time import get_slice_time
 from .parse_units import parse_units
 from .plot_legend import plot_legend
 from .read_parameter import read_parameter
+from .read_field import read_field
 
 
 def _smooth_1d(x: np.ndarray, n: int) -> np.ndarray:
@@ -31,6 +32,32 @@ def _write_outfile(outfile: str | Path, flux: np.ndarray, fa: np.ndarray, comple
     else:
         arr = np.column_stack([f, np.real(y).reshape(-1)])
     np.savetxt(str(outfile), arr, fmt="%16.6e")
+
+
+def _assign_output(target, values: np.ndarray) -> None:
+    arr = np.asarray(values, dtype=float).reshape(-1)
+    if target is None:
+        return
+    if isinstance(target, list):
+        target.clear()
+        target.extend(arr.tolist())
+        return
+    if isinstance(target, np.ndarray):
+        if target.ndim != 1:
+            raise ValueError("Output array must be 1D.")
+        if target.size != arr.size:
+            raise ValueError(
+                f"Output array has size {target.size}, expected {arr.size}."
+            )
+        target[:] = arr
+        return
+    if hasattr(target, "clear") and hasattr(target, "extend"):
+        target.clear()
+        target.extend(arr.tolist())
+        return
+    raise TypeError(
+        "Output container must be a list-like (clear/extend) or a 1D numpy array."
+    )
 
 
 def plot_flux_average(
@@ -280,7 +307,7 @@ def plot_flux_average(
     if rms:
         fa2 = np.asarray(
             flux_average(
-                np.asarray(read_field(field, filename=filename, slices=int(time), points=points, linear=linear, complex=complex, abs=abs, phase=phase, return_meta=False, **kwargs))
+                np.asarray(read_field(field, filename=filename, timeslices=int(time), points=points, linear=linear, complex=complex, abs=abs, phase=phase, return_meta=False, **kwargs))
                 ** 2,
                 t=time,
                 bins=bins,
@@ -346,10 +373,8 @@ def plot_flux_average(
             for xq in fv:
                 plt.plot([xq, xq], [y0, y1], linestyle="-", color=color if color is not None else "k", linewidth=0.7)
             valsq = np.interp(fv, np.asarray(flux, dtype=float), np.asarray(np.real(fa), dtype=float))
-            if val_at_q is not None:
-                val_at_q = valsq
-            if flux_at_q_out is not None:
-                flux_at_q_out = fv
+            _assign_output(val_at_q, valsq)
+            _assign_output(flux_at_q_out, fv)
 
     if outfile is not None:
         _write_outfile(outfile, flux, fa, complex_mode=complex)

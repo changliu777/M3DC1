@@ -10,7 +10,7 @@ def _interp2(field2d: np.ndarray, x: np.ndarray, z: np.ndarray, x0: np.ndarray, 
     interp = RegularGridInterpolator(
         (np.asarray(x, dtype=float), np.asarray(z, dtype=float)),
         np.asarray(field2d, dtype=float),
-        method="linear",
+        method="nearest",
         bounds_error=False,
         fill_value=np.nan,
     )

@@ -5,7 +5,6 @@ from .dimensions import dimensions
 from .delstar import delstar
 from .dx import dx
 from .dz import dz
-from .eval import eval
 from .eval_field import eval_field
 from .field_data import field_data
 from .flux_average_field import flux_average_field
@@ -63,7 +62,6 @@ __all__ = [
     "delstar",
     "dx",
     "dz",
-    "eval",
     "eval_field",
     "field_data",
     "flux_average_field",

@@ -144,7 +144,7 @@ def flux_coordinates(
     n = int(max(8, fbins))
 
     if psi0 is None or x is None or z is None:
-        p = read_field("psi", filename=fn, slices=slice, points=points, equilibrium=True, return_meta=True, **kwargs)
+        p = read_field("psi", filename=fn, timeslices=slice, points=points, equilibrium=True, return_meta=True, **kwargs)
         psi = np.asarray(p.data)
         psi0 = psi[0, :, :] if psi.ndim == 3 else psi
         x = np.asarray(p.r, dtype=float).reshape(-1)
@@ -161,10 +161,10 @@ def flux_coordinates(
             dpsi0_dz = dz(psi0, z)
         else:
             dpx = np.asarray(
-                read_field("psi", filename=fn, slices=slice, points=points, equilibrium=True, operation=2, return_meta=False, **kwargs)
+                read_field("psi", filename=fn, timeslices=slice, points=points, equilibrium=True, operation=2, return_meta=False, **kwargs)
             )
             dpz = np.asarray(
-                read_field("psi", filename=fn, slices=slice, points=points, equilibrium=True, operation=3, return_meta=False, **kwargs)
+                read_field("psi", filename=fn, timeslices=slice, points=points, equilibrium=True, operation=3, return_meta=False, **kwargs)
             )
             dpsi0_dx = dpx[0, :, :] if dpx.ndim == 3 else dpx
             dpsi0_dz = dpz[0, :, :] if dpz.ndim == 3 else dpz
@@ -177,7 +177,7 @@ def flux_coordinates(
             dpsi0_dz = dpsi0_dz[0, :, :]
 
     if not fast and i0 is None:
-        i_raw = np.asarray(read_field("I", filename=fn, slices=slice, points=points, equilibrium=True, return_meta=False, **kwargs))
+        i_raw = np.asarray(read_field("I", filename=fn, timeslices=slice, points=points, equilibrium=True, return_meta=False, **kwargs))
         i0 = i_raw[0, :, :] if i_raw.ndim == 3 else i_raw
     elif i0 is None:
         i0 = np.zeros_like(psi0, dtype=float)

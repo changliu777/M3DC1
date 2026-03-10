@@ -58,7 +58,7 @@ def flux_average(
             p = read_field(
                 "psi",
                 filename=filename,
-                slices=int(t or 0),
+                timeslices=int(t or 0),
                 points=int(points),
                 equilibrium=True,
                 return_meta=True,
@@ -114,7 +114,7 @@ def flux_average(
 
         meta = read_field(
             field,
-            slices=int(t or 0),
+            timeslices=int(t or 0),
             points=int(points or fc.m),
             linear=linear,
             complex=complex,

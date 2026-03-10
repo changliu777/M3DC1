@@ -1073,9 +1073,11 @@ subroutine set_defaults
        "1: Use double-precision floating points in output", output_grp)
   call add_var_int("irestart_slice", irestart_slice, -1, &
        "Field output slice from which to restart", output_grp)
-
   call add_var_int("iveldif", iveldif, 0, &
        "ne.0: veldif plot contains only partial results ", output_grp)
+  call add_var_int("write_ts_on_job_timeout", write_ts_on_job_timeout, 0, &
+       "1: Write time slice and stop code before job hits timeout or is preempted", output_grp)
+
   ! diagnostics
   call add_var_int("xray_detector_enabled", xray_detector_enabled, 0, &
        "1: enable xray detector", diagnostic_grp)

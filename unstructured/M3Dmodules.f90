@@ -462,6 +462,7 @@ module basic
   integer :: iheat_sink   !  add a sink term in p equation (initially for itaylor=27)
   integer :: iread_neo      ! 1 = read velocity profiles from NEO output
   integer :: ineo_subtract_diamag ! 1 = subtract v* from input v profile
+  integer :: write_ts_on_job_timeout ! 1: Write time slice and stop code before job hits timeout or is preempted
 
   ! adaptation options
   integer :: iadapt     ! 1,2 = adapts mesh after initialization

@@ -84,6 +84,7 @@ contains
     use diagnostics
     use auxiliary_fields
     use particles
+    use signal_handler
 
     implicit none
 
@@ -132,8 +133,8 @@ contains
       endif
     !endif
     
-    ! only write field data evey ntimepr timesteps
-    if((mod(ntime-ntime0,ntimepr).eq.0) .or. gamma_converged_flag.eq.1) then
+    ! only write field data every ntimepr timesteps, after termination signal was sent by Slurm, or when growth rate is converged (linear only)
+    if((mod(ntime-ntime0,ntimepr).eq.0) .or. timeout_flag.eq.1 .or. gamma_converged_flag.eq.1) then
        if(iwrite_aux_vars.eq.1) then
           if(myrank.eq.0 .and. iprint.ge.2) print *, "  calculating aux fields"
           call calculate_auxiliary_fields(eqsubtract)
@@ -198,7 +199,18 @@ contains
         print *, ' Time slice written before termination.'
         print *, ' ============================================='
       endif
-      call safestop(1)
+      call safestop(20)
+    endif
+    ! If Slurm is terminating the job, stop code execution after output was written
+    if (timeout_flag.eq.1) then
+      if (myrank.eq.0) then
+        print *, ' ============================================='
+        print *, ' SLURM SIGNAL RECEIVED (SIGUSR1)'
+        print *, ' Time limit approaching or job preempted.'
+        print *, ' Time slice written before termination.'
+        print *, ' ============================================='
+      endif
+      call safestop(401)
     endif
   end subroutine output
 
@@ -1147,8 +1159,8 @@ subroutine output_fields(time_group_id, equilibrium, error)
   end if
 
 #ifdef USEPARTICLES
-  call write_field(group_id, "rhof", rho_field, nelms, error)
   if (kinetic.eq.1) then
+     call write_field(group_id, "rhof", rho_field, nelms, error)
      call write_field(group_id, "nf",   nf_field, nelms, error)
      call write_field(group_id, "tf",   tf_field, nelms, error)
      call write_field(group_id, "pf",   pf_field, nelms, error)

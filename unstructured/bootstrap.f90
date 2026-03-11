@@ -1655,6 +1655,11 @@ subroutine calculate_CommonTerm_Lambda_fordtenormdpsit(temp1,temp2,tempAA, tempB
     vectype, dimension(MAX_PTS) :: pso,chisq,const1, temp_val,x_norm
     integer :: i,j
     real(dp):: tempbeta,tempvar,temax3
+    real(dp) :: atten_width_edge, atten_width_core 
+    real(dp) :: atten_grad
+    real(dp), parameter :: pso_trans_start = 0.99_dp
+    real(dp), parameter :: pso_trans_width = 0.01_dp ! 1.0_dp - 0.99_dp
+    real(dp) :: x_trans, blend_factor, atten_width_local
 
     temp1 = 0.
     temp2 = 0.
@@ -1675,6 +1680,9 @@ subroutine calculate_CommonTerm_Lambda_fordtenormdpsit(temp1,temp2,tempAA, tempB
     tempbeta=0.
     tempvar=0.
     temax3=0.
+
+    atten_width_core=ibootstrap_regular*10.0
+    atten_width_edge=atten_width_core*100.0
 
     if (ibootstrap_model.eq.1 .or. ibootstrap_model.eq.3) then 
         print *, "Can't Use ibootstrap =3 , not setup yet"
@@ -1698,6 +1706,23 @@ subroutine calculate_CommonTerm_Lambda_fordtenormdpsit(temp1,temp2,tempAA, tempB
     if(itor.eq.1) temp_delmagTe(i) = temp_delmagTe(i) + tet79(i,OP_DP)*tet79(i,OP_DP)*ri2_79(i)
 #endif
 
+    pso(i) = 1.0_dp - MAX(real(tet79(i, OP_1)), ibootstrap_regular**2) / temax3
+
+    ! Smooth attenuation width based on pso(i)
+    if (real(pso(i)) > pso_trans_start) then
+        ! Normalize through the transition window to [0, 1]
+        x_trans = MIN(real(pso(i)) - pso_trans_start, pso_trans_width) / pso_trans_width
+        
+        ! Smooth cubic blend
+        blend_factor = 3.0 * x_trans**2 - 2.0 * x_trans**3
+
+        atten_width_local = atten_width_core + (atten_width_edge - atten_width_core) * blend_factor
+    else
+        atten_width_local = atten_width_core
+    endif
+
+    
+    atten_grad = (temp_delmagTe(i)**2) / (temp_delmagTe(i)**2 + atten_width_local**2)
     temp_delmagTe(i)=(temp_delmagTe(i))+ ibootstrap_regular
       
     
@@ -1708,7 +1733,7 @@ subroutine calculate_CommonTerm_Lambda_fordtenormdpsit(temp1,temp2,tempAA, tempB
     if(itor.eq.1) tempCC(i) = tempCC(i) + tit79(i,OP_DP)*tet79(i,OP_DP)*ri2_79(i)
 #endif 
 
-    tempCC(i) = tempCC(i) / temp_delmagTe(i)
+    tempCC(i) = tempCC(i) / temp_delmagTe(i) * atten_grad
     !tempCC(i) = smooth_ceiling(real(tempCC(i)), 100.0_dp, 110.0_dp)
 
     tempCC(i) = nt79(i,OP_1)* tempCC(i) 
@@ -1726,8 +1751,8 @@ subroutine calculate_CommonTerm_Lambda_fordtenormdpsit(temp1,temp2,tempAA, tempB
         endif
 #endif
         
-        tempAA_ne(i) = tempAA_ne(i) / temp_delmagTe(i)
-        tempAA_ni(i) = tempAA_ni(i) / temp_delmagTe(i) 
+        !tempAA_ne(i) = tempAA_ne(i) / temp_delmagTe(i)
+        !tempAA_ni(i) = tempAA_ni(i) / temp_delmagTe(i) 
 
         !tempAA_ni(i) = smooth_ceiling(real(tempAA_ni(i)), 100.0_dp, 110.0_dp)
         !tempAA_ne(i) = smooth_ceiling(real(tempAA_ne(i)), 100.0_dp, 110.0_dp)
@@ -1735,7 +1760,7 @@ subroutine calculate_CommonTerm_Lambda_fordtenormdpsit(temp1,temp2,tempAA, tempB
         tempAA_ne(i) = tet79(i,OP_1) * tempAA_ne(i)
         tempAA_ni(i) = tit79(i,OP_1) * tempAA_ni(i) 
 
-        tempAA(i)=tempAA_ni(i)+tempAA_ne(i)
+        tempAA(i)=(tempAA_ni(i)+tempAA_ne(i))/temp_delmagTe(i) * atten_grad
 
         
           
@@ -1759,7 +1784,7 @@ subroutine calculate_CommonTerm_Lambda_fordtenormdpsit(temp1,temp2,tempAA, tempB
         tempCC(i) = jbsfluxavg_G79(i,OP_1)*(jbsl3179(i,OP_1)+jbsl3479(i,OP_1)*&
                 jbsalpha79(i,OP_1))*(-temax3)*jbs_dtedpsit79(i,OP_1)*(tempCC(i))
 
-        pso(i) = 1.0_dp - MAX(real(tet79(i, OP_1)), ibootstrap_regular**2) / temax3
+        
         if (real(pso(i)) > 0.9995) then
           x_norm(i) = (MIN(real(pso(i)), 1.0_dp) - 0.9995_dp) / 0.0005_dp
           temp_val(i) = 1.0_dp - (3.0_dp * x_norm(i)**2 - 2.0_dp * x_norm(i)**3)

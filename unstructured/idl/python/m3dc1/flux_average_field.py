@@ -1,8 +1,20 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import numpy as np
 
 from .field_at_point import field_at_point
+
+
+@dataclass
+class FluxAverageFieldResult:
+    data: np.ndarray
+    flux: np.ndarray
+    nflux: np.ndarray
+    area: np.ndarray
+    volume: np.ndarray
+    r0: float
 
 def flux_average_field(
     field,
@@ -43,7 +55,6 @@ def flux_average_field(
     vals = np.asarray(field_at_point(f, np.asarray(x), np.asarray(z), fc.r, fc.z))
     if vals.ndim == 2:
         vals = vals[None, :, :]
-    vals = np.transpose(vals, (0, 2, 1))  # [k, m, n]
 
     out = np.zeros((vals.shape[0], fc.n), dtype=np.complex128 if np.iscomplexobj(vals) else float)
     for j in range(fc.n):
@@ -68,5 +79,12 @@ def flux_average_field(
 
     result = out[0, :] if out.shape[0] == 1 else out
     if return_meta:
-        return result, np.asarray(fc.psi), np.asarray(fc.psi_norm), np.asarray(fc.area), np.asarray(fc.V), float(fc.r0)
+        return FluxAverageFieldResult(
+            data=np.asarray(result),
+            flux=np.asarray(fc.psi),
+            nflux=np.asarray(fc.psi_norm),
+            area=np.asarray(fc.area),
+            volume=np.asarray(fc.V),
+            r0=float(fc.r0),
+        )
     return result

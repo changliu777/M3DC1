@@ -59,8 +59,8 @@ def plot_field(
     title: str | None = None,
     units: str | None = None,
     range=None,
-    rrange=None,
-    zrange=None,
+    xrange=None,
+    yrange=None,
     linear: bool = False,
     xlim=None,
     cutx=None,
@@ -75,6 +75,7 @@ def plot_field(
     logical: bool = False,
     realtime=None,
     levels=None,
+    colorbar: bool = True,
     phase: bool = False,
     abs: bool = False,
     operation: int = 1,
@@ -119,8 +120,8 @@ def plot_field(
         name,
         timeslices=main_timeslices,
         points=points,
-        rrange=rrange,
-        zrange=zrange,
+        xrange=xrange,
+        yrange=yrange,
         linear=linear,
         phi=phi,
         logical=logical,
@@ -165,11 +166,6 @@ def plot_field(
             f3[k, :, :] = f3[k, :, :] - m * (f3[k, :, :] - float(mask_val))
 
     f3 = np.real(f3)
-
-    if range is None:
-        zmin = float(np.nanmin(f3))
-        zmax = float(np.nanmax(f3))
-        range = [zmin, zmax]
 
     if notitle:
         title = fieldname
@@ -245,6 +241,7 @@ def plot_field(
             ytitle="psi",
             cmap=cmap,
             range=range,
+            colorbar=colorbar,
             overplot=overplot,
             **plot_kwargs,
         )
@@ -264,6 +261,7 @@ def plot_field(
         xtitle=make_label("R", l0=1, **label_kwargs),
         ytitle=make_label("Z", l0=1, **label_kwargs),
         range=range,
+        colorbar=colorbar,
         overplot=overplot,
         **plot_kwargs,
     )

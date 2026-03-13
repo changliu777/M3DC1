@@ -23,4 +23,4 @@ def plot_legend(
     handles = [
         Line2D([0], [0], linestyle=linestyles[i], color=colors[i], label=names[i]) for i in range(n)
     ]
-    plt.legend(handles=handles, loc="best", fontsize=8)
+    plt.legend(handles=handles, loc="best", frameon=False)

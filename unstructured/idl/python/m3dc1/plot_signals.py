@@ -52,6 +52,22 @@ def plot_signals(
             plt.plot(tdata, data[i, :], label=f"{signal} {i}")
         plt.xlabel(xtitle)
         plt.ylabel(ylabel)
+        finite = np.asarray(data, dtype=float)
+        finite = finite[np.isfinite(finite)]
+        if finite.size > 0:
+            ymin = float(np.min(finite))
+            ymax = float(np.max(finite))
+            if ymax > ymin:
+                yrange_pad = 0.1 * (ymax - ymin)
+                ymin_pad = ymin - yrange_pad
+                ymax_pad = ymax + yrange_pad
+            else:
+                yrange_pad = max(abs(ymin), 1.0) * 0.1
+                ymin_pad = ymin - yrange_pad
+                ymax_pad = ymax + yrange_pad
+            plt.ylim(bottom=ymin_pad, top=ymax_pad)
+            if (ymin_pad < 0.0) and (ymax_pad > 0.0):
+                plt.axhline(0.0, color="black", linestyle="-", linewidth=0.8)
         if data.shape[0] <= 12:
             plt.legend(loc="best", fontsize=8)
         plt.tight_layout()

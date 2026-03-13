@@ -5,22 +5,6 @@ from dataclasses import dataclass
 import matplotlib.pyplot as plt
 import numpy as np
 
-try:
-    from numba import njit
-
-    _NUMBA_AVAILABLE = True
-except ImportError:
-    _NUMBA_AVAILABLE = False
-
-    def njit(*args, **kwargs):
-        if args and callable(args[0]) and len(args) == 1 and not kwargs:
-            return args[0]
-
-        def _decorator(func):
-            return func
-
-        return _decorator
-
 from .dx import dx
 from .dz import dz
 from .field_at_point import field_at_point
@@ -59,36 +43,19 @@ class FluxCoordinates:
     dpsi_dchi: float
 
 
-def _extract_paths_at_levels(psi2d: np.ndarray, x: np.ndarray, z: np.ndarray, levels) -> list[np.ndarray | None]:
+def _extract_path_at_level(psi2d: np.ndarray, x: np.ndarray, z: np.ndarray, level: float) -> np.ndarray | None:
     fig, ax = plt.subplots(figsize=(2, 2))
-    lev = np.asarray(levels, dtype=float).reshape(-1)
-    order = np.argsort(lev)
-    lev_sorted = lev[order]
-    cs = ax.contour(x, z, psi2d.T, levels=lev_sorted)
+    cs = ax.contour(x, z, psi2d.T, levels=[float(level)])
     try:
-        out_sorted: list[np.ndarray | None] = []
+        paths = []
         if hasattr(cs, "collections") and cs.collections:
-            for coll in cs.collections[: lev_sorted.size]:
-                paths = [p.vertices for p in coll.get_paths() if p.vertices.shape[0] > 4]
-                if not paths:
-                    out_sorted.append(None)
-                    continue
-                k = int(np.argmax([pv.shape[0] for pv in paths]))
-                out_sorted.append(np.asarray(paths[k], dtype=float))
-        elif hasattr(cs, "allsegs") and cs.allsegs:
-            for segs in cs.allsegs[: lev_sorted.size]:
-                paths = [np.asarray(seg, dtype=float) for seg in segs if np.asarray(seg).shape[0] > 4]
-                if not paths:
-                    out_sorted.append(None)
-                    continue
-                k = int(np.argmax([pv.shape[0] for pv in paths]))
-                out_sorted.append(np.asarray(paths[k], dtype=float))
-        while len(out_sorted) < lev_sorted.size:
-            out_sorted.append(None)
-        out: list[np.ndarray | None] = [None] * lev.size
-        for sorted_idx, orig_idx in enumerate(order):
-            out[orig_idx] = out_sorted[sorted_idx]
-        return out
+            paths = [p.vertices for p in cs.collections[0].get_paths() if p.vertices.shape[0] > 4]
+        elif hasattr(cs, "allsegs") and cs.allsegs and cs.allsegs[0]:
+            paths = [np.asarray(seg, dtype=float) for seg in cs.allsegs[0] if np.asarray(seg).shape[0] > 4]
+        if not paths:
+            return None
+        k = int(np.argmax([pv.shape[0] for pv in paths]))
+        return np.asarray(paths[k], dtype=float)
     finally:
         plt.close(fig)
 
@@ -111,114 +78,13 @@ def _sample_ring_from_path(path: np.ndarray, axis: np.ndarray, theta: np.ndarray
     return r, z
 
 
-@njit(cache=True)
-def _nearest_index_numba(arr: np.ndarray, value: float) -> int:
-    n = arr.size
-    if n <= 1:
-        return 0
-    if value <= arr[0]:
-        return 0
-    if value >= arr[n - 1]:
-        return n - 1
-    lo = 0
-    hi = n - 1
-    while hi - lo > 1:
-        mid = (lo + hi) // 2
-        if arr[mid] <= value:
-            lo = mid
-        else:
-            hi = mid
-    if abs(arr[hi] - value) < abs(arr[lo] - value):
-        return hi
-    return lo
-
-
-@njit(cache=True)
-def _interp2_nearest_numba(field2d: np.ndarray, x: np.ndarray, z: np.ndarray, xv: float, zv: float) -> float:
-    ix = _nearest_index_numba(x, xv)
-    iz = _nearest_index_numba(z, zv)
-    return field2d[ix, iz]
-
-
-@njit(cache=True)
 def _safe_nonzero_scalar(v: float) -> float:
-    tiny = 1.0e-300
+    tiny = float(np.finfo(float).tiny)
     if not np.isfinite(v):
         return 1.0
     if abs(v) < tiny:
         return float(np.copysign(tiny, v if v != 0.0 else 1.0))
     return float(v)
-
-
-@njit(cache=True)
-def _compute_jacobian_numba(
-    rpath: np.ndarray,
-    zpath: np.ndarray,
-    jac: np.ndarray,
-    q: np.ndarray,
-    fmetric: np.ndarray,
-    x: np.ndarray,
-    z: np.ndarray,
-    i0: np.ndarray,
-    b2r2: np.ndarray,
-    dpsi_dpsin: float,
-    itor: int,
-    pest: bool,
-    boozer: bool,
-    hamada: bool,
-) -> None:
-    m, n = rpath.shape
-    for j in range(n):
-        if pest:
-            qj = q[j]
-            for i in range(m):
-                rp = rpath[i, j] if itor == 1 else 1.0
-                ival = _interp2_nearest_numba(i0, x, z, rpath[i, j], zpath[i, j])
-                jac[i, j] = -dpsi_dpsin * (rp ** 2) * qj / _safe_nonzero_scalar(ival)
-        elif boozer:
-            fj = fmetric[j] if abs(fmetric[j]) > 1.0e-300 else 1.0
-            for i in range(m):
-                rp = rpath[i, j] if itor == 1 else 1.0
-                bval = _interp2_nearest_numba(b2r2, x, z, rpath[i, j], zpath[i, j])
-                jac[i, j] = -dpsi_dpsin * fj * (rp ** 2) / _safe_nonzero_scalar(bval)
-        elif hamada:
-            fj = fmetric[j] if abs(fmetric[j]) > 1.0e-300 else 1.0
-            for i in range(m):
-                jac[i, j] = -dpsi_dpsin * fj
-
-
-@njit(cache=True)
-def _compute_omega_numba(
-    rpath: np.ndarray,
-    zpath: np.ndarray,
-    jac: np.ndarray,
-    omega: np.ndarray,
-    q: np.ndarray,
-    x: np.ndarray,
-    z: np.ndarray,
-    i0: np.ndarray,
-    theta: np.ndarray,
-    dpsi_dpsin: float,
-    itor: int,
-) -> None:
-    m, n = rpath.shape
-    for j in range(n):
-        qj = q[j]
-        jac_pest_old = 1.0
-        for i in range(m):
-            rp = rpath[i, j] if itor == 1 else 1.0
-            ival = _interp2_nearest_numba(i0, x, z, rpath[i, j], zpath[i, j])
-            jac_pest = -dpsi_dpsin * (rp ** 2) * qj / _safe_nonzero_scalar(ival)
-            if i == 0:
-                omega[i, j] = 0.0
-            else:
-                dtheta = theta[i] - theta[i - 1]
-                t0 = 1.0 - jac[i, j] / _safe_nonzero_scalar(jac_pest)
-                t1 = 1.0 - jac[i - 1, j] / _safe_nonzero_scalar(jac_pest_old)
-                omega[i, j] = omega[i - 1, j] + dtheta * (t0 + t1) * 0.5
-            jac_pest_old = jac_pest
-        for i in range(m):
-            omega[i, j] = omega[i, j] * qj
 
 
 def flux_coordinates(
@@ -358,9 +224,8 @@ def flux_coordinates(
     gradpsi = np.sqrt(np.maximum(np.asarray(dpsi0_dx) ** 2 + np.asarray(dpsi0_dz) ** 2, np.finfo(float).tiny))
 
     prev_rho = 0.05 * max(float(np.max(x) - np.min(x)), float(np.max(z) - np.min(z)))
-    paths = _extract_paths_at_levels(psi0, x, z, psi_1d)
     for j in range(n):
-        path = paths[j] if j < len(paths) else None
+        path = _extract_path_at_level(psi0, x, z, float(psi_1d[j]))
         if path is not None:
             rr, zz = _sample_ring_from_path(path, axis, theta)
             if rr is not None:
@@ -437,23 +302,25 @@ def flux_coordinates(
             zz_ext = np.r_[zz, zz[0]]
             rpath[:, j] = np.interp(theta, th_ext, rr_ext)
             zpath[:, j] = np.interp(theta, th_ext, zz_ext)
-        b2r2 = np.asarray(i0, dtype=float) ** 2 + np.asarray(dpsi0_dx, dtype=float) ** 2 + np.asarray(dpsi0_dz, dtype=float) ** 2
-        _compute_jacobian_numba(
-            np.asarray(rpath, dtype=float),
-            np.asarray(zpath, dtype=float),
-            jac,
-            q,
-            fmetric,
-            np.asarray(x, dtype=float),
-            np.asarray(z, dtype=float),
-            np.asarray(i0, dtype=float),
-            np.asarray(b2r2, dtype=float),
-            float(dpsi_dpsin),
-            int(itor),
-            bool(pest),
-            bool(boozer),
-            bool(hamada),
-        )
+
+        rp = np.asarray(rpath if itor == 1 else np.ones_like(rpath), dtype=float)
+        if pest:
+            for j in range(n):
+                qj = float(q[j])
+                for i in range(m):
+                    ival = float(field_at_point(i0, x, z, float(rpath[i, j]), float(zpath[i, j])))
+                    jac[i, j] = -dpsi_dpsin * (rp[i, j] ** 2) * qj / _safe_nonzero_scalar(ival)
+        elif boozer:
+            b2r2 = np.asarray(i0) ** 2 + np.asarray(dpsi0_dx) ** 2 + np.asarray(dpsi0_dz) ** 2
+            for j in range(n):
+                fj = float(fmetric[j]) if abs(float(fmetric[j])) > np.finfo(float).tiny else 1.0
+                for i in range(m):
+                    bval = float(field_at_point(b2r2, x, z, float(rpath[i, j]), float(zpath[i, j])))
+                    jac[i, j] = -dpsi_dpsin * fj * (rp[i, j] ** 2) / _safe_nonzero_scalar(bval)
+        elif hamada:
+            for j in range(n):
+                fj = float(fmetric[j]) if abs(float(fmetric[j])) > np.finfo(float).tiny else 1.0
+                jac[:, j] = -dpsi_dpsin * fj
 
     dr_dpsi = np.gradient(rpath, psin, axis=1, edge_order=1)
     dz_dpsi = np.gradient(zpath, psin, axis=1, edge_order=1)
@@ -467,31 +334,32 @@ def flux_coordinates(
 
     # omega = zeta - phi for non-geometric coordinates.
     if not geo and not fast:
-        _compute_omega_numba(
-            np.asarray(rpath, dtype=float),
-            np.asarray(zpath, dtype=float),
-            jac,
-            omega,
-            q,
-            np.asarray(x, dtype=float),
-            np.asarray(z, dtype=float),
-            np.asarray(i0, dtype=float),
-            np.asarray(theta, dtype=float),
-            float(dpsi_dpsin),
-            int(itor),
-        )
+        for j in range(n):
+            qj = float(q[j])
+            jac_pest_old = 1.0
+            for i in range(m):
+                ival = float(field_at_point(i0, x, z, float(rpath[i, j]), float(zpath[i, j])))
+                jac_pest = -dpsi_dpsin * (rp[i, j] ** 2) * qj / _safe_nonzero_scalar(ival)
+                if i == 0:
+                    omega[i, j] = 0.0
+                else:
+                    dtheta = float(theta[i] - theta[i - 1])
+                    t0 = 1.0 - jac[i, j] / _safe_nonzero_scalar(float(jac_pest))
+                    t1 = 1.0 - jac[i - 1, j] / _safe_nonzero_scalar(float(jac_pest_old))
+                    omega[i, j] = omega[i - 1, j] + dtheta * (t0 + t1) * 0.5
+                jac_pest_old = jac_pest
+            omega[:, j] = omega[:, j] * qj
         jac[:, :] = np.nan_to_num(jac, nan=0.0, posinf=0.0, neginf=0.0)
         omega[:, :] = np.nan_to_num(omega, nan=0.0, posinf=0.0, neginf=0.0)
 
     if not fast:
-        finite_phi = np.asarray(phi, dtype=float)[np.isfinite(phi)]
-        den = float(finite_phi[-1]) if finite_phi.size > 0 else 0.0
+        den = float(phi[-1])
         if abs(den) < np.finfo(float).tiny:
             phi_norm = np.zeros_like(phi)
             rho = np.zeros_like(phi)
         else:
             phi_norm = phi / den
-            rho = np.sqrt(np.clip(phi_norm, 0.0, None))
+            rho = np.sqrt(phi_norm)
     else:
         phi_norm = np.zeros_like(phi)
         rho = np.zeros_like(phi)

@@ -472,17 +472,20 @@ def read_scalar(
     filename: str | Path | Sequence[str | Path] = "C1.h5",
     final: bool = False,
     integrate: bool = False,
-    growth_rate: bool = False,
+    growth: bool = False,
     ipellet: int = 0,
     cgs: bool = False,
     mks: bool = False,
     return_meta: bool = False,
+    growth_rate: bool | None = None,
 ):
     """
     Python port of read_scalar.pro (core behavior).
     """
     if not scalarname:
         raise ValueError("Error: no scalar name provided")
+    if growth_rate is not None:
+        growth = bool(growth_rate)
 
     if isinstance(filename, (list, tuple)):
         vals = []
@@ -492,7 +495,7 @@ def read_scalar(
                 filename=f,
                 final=True,
                 integrate=integrate,
-                growth_rate=growth_rate,
+                growth=growth,
                 ipellet=ipellet,
                 cgs=cgs,
                 mks=mks,
@@ -519,7 +522,7 @@ def read_scalar(
     time_out = convert_units(time, dimensions(t0=1), filename=filename, cgs=cgs, mks=mks)
     units = parse_units(d, cgs=cgs, mks=mks)
 
-    if growth_rate:
+    if growth:
         tiny = np.finfo(float).tiny
         if np.asarray(data).ndim == 1:
             n = min(len(np.asarray(time_out).reshape(-1)), len(np.asarray(data).reshape(-1)))

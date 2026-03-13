@@ -6,7 +6,12 @@ import numpy as np
 
 
 def _read_ascii(path: Path) -> np.ndarray:
-    return np.atleast_2d(np.loadtxt(str(path), dtype=float))
+    arr = np.asarray(np.loadtxt(str(path), dtype=float))
+    if arr.ndim == 0:
+        return arr.reshape(1, 1)
+    if arr.ndim == 1:
+        return arr.reshape(-1, 1)
+    return np.asarray(arr, dtype=float)
 
 
 def read_coil_data(*, directory=".", rmp=False):
@@ -20,14 +25,23 @@ def read_coil_data(*, directory=".", rmp=False):
     n = min(coil.shape[0], curr.shape[0])
     if n == 0:
         return None
+    m = int(curr.shape[1])
+    print(f"n, m = {n}, {m}")
+
     out = np.zeros((10, n), dtype=float)
     out[0, :] = curr[:n, 0]
-    out[1, :] = curr[:n, 1] if curr.shape[1] > 1 else curr[:n, 0]
-    ccols = min(6, max(coil.shape[1] - 3, 0))
-    if ccols > 0:
-        out[2 : 2 + ccols, :] = coil[:n, 3 : 3 + ccols].T
-    if ccols <= 6:
+    out[1, :] = curr[:n, 1] if m >= 2 else curr[:n, 0]
+
+    # Match IDL read_coil_data: the newer "field01" layout stores the
+    # geometry in columns 4:9, while the older layout uses all coil columns.
+    if coil.shape[1] >= 9:
+        out[2:8, :] = coil[:n, 3:9].T
         out[8, :] = 1.0
         out[9, :] = 1.0
-    return out
+    else:
+        l = min(int(coil.shape[1]), 8)
+        if l > 0:
+            out[2 : 2 + l, :] = coil[:n, :l].T
 
+    print(out)
+    return out

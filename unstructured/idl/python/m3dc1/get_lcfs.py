@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 
 from .read_field import read_field
 from .read_lcfs import read_lcfs
@@ -26,12 +26,13 @@ def get_lcfs(psi=None, x=None, z=None, *, psival=None, axis=None, filename="C1.h
         lc = read_lcfs(filename=filename, slice=slice, return_meta=True, **kwargs)
         psival = float(lc.psilim)
 
-    cs = plt.contour(xv, zv, psi2d.T, levels=[float(psival)])
+    fig = Figure()
+    ax = fig.add_subplot(111)
+    cs = ax.contour(xv, zv, psi2d.T, levels=[float(psival)])
     try:
         if not cs.collections or not cs.collections[0].get_paths():
             return np.zeros((2, 0), dtype=float)
         path = cs.collections[0].get_paths()[0].vertices
         return np.asarray(path.T, dtype=float)
     finally:
-        plt.clf()
-
+        fig.clear()

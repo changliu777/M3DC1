@@ -1,18 +1,13 @@
 from __future__ import annotations
 
+import builtins
 from pathlib import Path
 
-import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .convert_units import convert_units
-from .dimensions import dimensions
-from .get_colors import get_colors
-from .get_normalizations import get_normalizations
-from .hdf5_file_test import hdf5_file_test
 from .plot_legend import plot_legend
-from .read_scalar import read_scalar
+from .read_hmn import read_hmn
 
 
 def _smooth_1d(x: np.ndarray, n: int) -> np.ndarray:
@@ -22,65 +17,13 @@ def _smooth_1d(x: np.ndarray, n: int) -> np.ndarray:
     return np.convolve(np.asarray(x, dtype=float), k, mode="same")
 
 
-def _find_group_case_insensitive(h5: h5py.File, name: str):
-    n = name.lower()
-    for k in h5.keys():
-        if k.lower() == n:
-            return h5[k]
-    return None
-
-
-def _first_dataset(obj) -> np.ndarray | None:
-    if isinstance(obj, h5py.Dataset):
-        return np.asarray(obj[()])
-    if isinstance(obj, h5py.Group):
-        for k in ("_data", "data", "value"):
-            if k in obj and isinstance(obj[k], h5py.Dataset):
-                return np.asarray(obj[k][()])
-        for k in ("KEHARMONICS", "BHARMONICS"):
-            if k in obj:
-                out = _first_dataset(obj[k])
-                if out is not None:
-                    return out
-        for k in obj.keys():
-            out = _first_dataset(obj[k])
-            if out is not None:
-                return out
-    return None
-
-
-def _read_harmonics(filename: str | Path, magnetic: bool) -> np.ndarray:
-    key = "bharmonics" if magnetic else "keharmonics"
-    with h5py.File(str(filename), "r") as h5:
-        obj = _find_group_case_insensitive(h5, key)
-        if obj is None:
-            raise KeyError(f"Missing '{key}' in file.")
-        arr = _first_dataset(obj)
-        if arr is None:
-            raise KeyError(f"Could not parse dataset for '{key}'.")
-    out = np.asarray(arr, dtype=float)
-    if out.ndim != 2:
-        raise ValueError(f"Expected 2D harmonics array for '{key}', got {out.shape}.")
-    return out
-
-
-def _orient_harmonics(h: np.ndarray, nt: int) -> np.ndarray:
-    arr = np.asarray(h, dtype=float)
-    if arr.shape[1] == nt:
-        return arr
-    if arr.shape[0] == nt:
-        return arr.T
-    d0 = abs(arr.shape[0] - nt)
-    d1 = abs(arr.shape[1] - nt)
-    return arr if d1 <= d0 else arr.T
-
-
 def plot_hmn(
     *,
     filename: str | Path = "C1.h5",
     maxn: int | None = None,
     growth: bool = False,
     outfile: str | Path | None = None,
+    xrange=None,
     yrange=None,
     smooth: int | None = None,
     overplot: bool = False,
@@ -88,85 +31,91 @@ def plot_hmn(
     linestyle="-",
     ke: bool = False,
     me: bool = False,
+    cgs: bool = False,
+    mks: bool = False,
     xscale: float = 1.0,
-    labelx: float = 0.5,
+    labelx: float = 0.9,
     nolegend: bool = False,
+    print: int | None = None,
     **kwargs,
 ):
     """Python port of plot_hmn.pro."""
     del kwargs, ke
-    if not hdf5_file_test(filename):
+
+    meta = read_hmn(
+        filename=filename,
+        maxn=maxn,
+        growth=growth,
+        outfile=outfile,
+        me=me,
+        cgs=cgs,
+        mks=mks,
+        return_meta=True,
+    )
+    data = np.asarray(meta.data, dtype=float)
+    time = np.asarray(meta.time, dtype=float)
+    if data.size == 0 or time.size == 0:
         return None, None
-
-    magnetic = bool(me)
-    name = "Magnetic Energy" if magnetic else "Kinetic Energy"
-    try:
-        kehmn = _read_harmonics(filename, magnetic=magnetic)
-    except Exception as exc:
-        print(f"Error reading harmonics: {exc}")
-        return None, None
-
-    tmeta = read_scalar("time", filename=filename, return_meta=True)
-    time = np.asarray(tmeta.data, dtype=float).reshape(-1)
-    finite = np.isfinite(time)
-    time = time[finite]
-    if time.size == 0:
-        return None, None
-    kehmn = _orient_harmonics(kehmn, nt=time.size)
-    ntimes = min(int(kehmn.shape[1]), int(time.size))
-    kehmn = kehmn[:, :ntimes]
-    time = time[:ntimes]
-
-    d = dimensions(energy=1)
-    b0, n0, l0, mi = get_normalizations(filename=filename)
-    kehmn = convert_units(kehmn, d, b0=b0, n0=n0, l0=l0, mi=mi, filename=filename)
-
-    if maxn is None:
-        maxn = int(kehmn.shape[0])
-    maxn = int(max(1, min(maxn, int(kehmn.shape[0]))))
-
-    if outfile is not None:
-        out = np.column_stack([time.reshape(-1), kehmn[:maxn, :].T])
-        np.savetxt(str(outfile), out, fmt="%16.6e")
-
-    keplot = np.asarray(kehmn[:maxn, :], dtype=float)
-    tiny = np.finfo(float).tiny
-    grate = np.zeros_like(keplot, dtype=float)
-    for n in range(maxn):
-        grate[n, :] = np.gradient(np.log(np.maximum(np.abs(keplot[n, :]), tiny)), time)
-
-    tmp = grate if growth else keplot
-    ytitle = "Growth Rate" if growth else name
-    xtitle = f"t ({tmeta.units})" if tmeta.units else "t"
 
     if smooth is not None:
-        for n in range(maxn):
-            tmp[n, :] = _smooth_1d(tmp[n, :], int(smooth))
+        for n in range(data.shape[0]):
+            data[n, :] = _smooth_1d(data[n, :], int(smooth))
+
+    if print is not None:
+        nprint = int(print)
+        if nprint < 0 or nprint >= data.shape[0]:
+            raise ValueError(f"plot_hmn(print={nprint}) is out of range for 0 <= n < {data.shape[0]}.")
+        yvals = np.asarray(data[nprint, :], dtype=float)
+        for i in range(0, yvals.size, 8):
+            chunk = yvals[i : i + 8]
+            builtins.print(" ".join(f"{value:12.6g}" for value in chunk))
 
     if yrange is None:
-        yrange = [float(np.nanmin(tmp)), float(np.nanmax(tmp))]
+        yrange_data = data
+        if meta.magnetic and data.shape[0] > 1:
+            yrange_data = data[1:, :]
+        ymin = float(np.nanmin(yrange_data))
+        ymax = float(np.nanmax(yrange_data))
+        if ymax > ymin:
+            ymax = ymax + 0.1 * (ymax - ymin)
+        else:
+            ymax = ymax + 0.1 * max(abs(ymax), 1.0)
+        yrange = [ymin, ymax]
 
-    colors = list(get_colors(maxn + 2))[1 : maxn + 1]
+    cycle = plt.rcParams["axes.prop_cycle"].by_key().get("color", [])
+    if not cycle:
+        cycle = ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9"]
+    colors = [cycle[i % len(cycle)] for i in range(data.shape[0])]
+
     if not overplot:
         fig, ax = plt.subplots(figsize=(8, 4.5))
-        ax.set_xlabel(xtitle)
-        ax.set_ylabel(ytitle)
-        if np.isfinite(yrange[0]) and np.isfinite(yrange[1]) and yrange[0] != yrange[1]:
-            ax.set_ylim(float(yrange[0]), float(yrange[1]))
+        ax.set_xlabel(meta.xtitle)
+        ax.set_ylabel(meta.ytitle)
     else:
         ax = plt.gca()
         fig = ax.figure
 
     lw = float(thick) if thick is not None else None
-    tscaled = np.asarray(time, dtype=float) * float(xscale)
-    for n in range(maxn):
+    tscaled = time * float(xscale)
+    ntimes = int(data.shape[1])
+    for n in range(data.shape[0]):
         c = colors[n % len(colors)] if colors else None
-        ax.plot(tscaled, tmp[n, :], linestyle=linestyle, linewidth=lw, color=c)
+        ax.plot(tscaled, data[n, :], linestyle=linestyle, linewidth=lw, color=c)
         m = min(int(ntimes * float(labelx)), ntimes - 1)
-        ax.text(tscaled[m], tmp[n, m], f"{n}", color=c if c is not None else "black")
+        ax.text(tscaled[m], data[n, m], f"{n}", color=c if c is not None else "black")
+
+    if xrange is not None:
+        ax.set_xlim(xrange)
+    else:
+        xmax = ax.get_xlim()[1]
+        ax.set_xlim(0.0, xmax)
+    if np.isfinite(yrange[0]) and np.isfinite(yrange[1]) and yrange[0] != yrange[1]:
+        ax.set_ylim(float(yrange[0]), float(yrange[1]))
+    if growth:
+        ax.axhline(0.0, color="black", linestyle="-", linewidth=0.8)
 
     if not nolegend:
-        names = [f"n={i}" for i in range(maxn)]
-        plot_legend(names, colors=colors, linestyles=[linestyle] * maxn)
+        names = [f"n={i}" for i in range(data.shape[0])]
+        plot_legend(names, colors=colors, linestyles=[linestyle] * data.shape[0])
 
     return fig, ax

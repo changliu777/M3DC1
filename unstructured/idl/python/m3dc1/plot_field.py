@@ -59,8 +59,8 @@ def plot_field(
     title: str | None = None,
     units: str | None = None,
     range=None,
-    rrange=None,
-    zrange=None,
+    xrange=None,
+    yrange=None,
     linear: bool = False,
     xlim=None,
     cutx=None,
@@ -119,8 +119,8 @@ def plot_field(
         name,
         timeslices=main_timeslices,
         points=points,
-        rrange=rrange,
-        zrange=zrange,
+        xrange=xrange,
+        yrange=yrange,
         linear=linear,
         phi=phi,
         logical=logical,
@@ -165,11 +165,6 @@ def plot_field(
             f3[k, :, :] = f3[k, :, :] - m * (f3[k, :, :] - float(mask_val))
 
     f3 = np.real(f3)
-
-    if range is None:
-        zmin = float(np.nanmin(f3))
-        zmax = float(np.nanmax(f3))
-        range = [zmin, zmax]
 
     if notitle:
         title = fieldname

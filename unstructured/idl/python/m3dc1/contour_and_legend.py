@@ -4,6 +4,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import cm
 
 
 def _choose_cmap(panel: np.ndarray) -> str:
@@ -46,17 +47,39 @@ def contour_and_legend_single(
         fracdiff = abs(maxval - minval) / scale
     print("maxval, minval, fracdiff = ", maxval, minval, fracdiff)
 
+    cmap_name = cmap if cmap else _choose_cmap(panel)
+    cmap_obj = cm.get_cmap(cmap_name).copy()
+    cmap_obj.set_under("black")
+    cmap_obj.set_over("white")
+
+    lev = np.asarray(contour_levels)
+    if lev.ndim == 0:
+        level_min = minval
+        level_max = maxval
+        nlevels = int(lev)
+    else:
+        level_min = float(np.min(lev))
+        level_max = float(np.max(lev))
+        nlevels = lev.size
+    full_span = level_max - level_min
+    if full_span > 0.0:
+        level_pad = 0.01 * full_span
+    else:
+        level_pad = 0.01 * max(abs(level_min), abs(level_max), 1.0)
+    contour_levels_use = np.linspace(level_min - level_pad, level_max + level_pad, nlevels)
+
     cf = ax.contourf(
         xv,
         yv,
         panel.T,
-        levels=contour_levels,
+        levels=contour_levels_use,
         vmin=vmin,
         vmax=vmax,
-        cmap=(cmap if cmap else _choose_cmap(panel)),
+        cmap=cmap_obj,
+        extend="both",
     )
     if lines:
-        ax.contour(xv, yv, panel.T, levels=contour_levels, colors="k", linewidths=0.5)
+        ax.contour(xv, yv, panel.T, levels=contour_levels_use, colors="k", linewidths=0.5)
 
     if colorbar_figure is None:
         if label:
@@ -118,7 +141,17 @@ def contour_and_legend(
         rr = np.asarray(range, dtype=float).reshape(-1)
         if rr.size >= 2:
             vmin, vmax = float(rr[0]), float(rr[1])
-    contour_levels = 100 if levels is None else levels
+    if vmin is not None and vmax is not None:
+        if levels is None:
+            contour_levels = np.linspace(vmin, vmax, 100)
+        else:
+            lev = np.asarray(levels)
+            if lev.ndim == 0:
+                contour_levels = np.linspace(vmin, vmax, int(lev))
+            else:
+                contour_levels = np.linspace(vmin, vmax, lev.size)
+    else:
+        contour_levels = 100 if levels is None else levels
 
     if n == 1:
         ax = plt.gca() if overplot else plt.figure(figsize=(7, 5)).gca()

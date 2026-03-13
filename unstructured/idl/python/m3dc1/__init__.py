@@ -1,3 +1,4 @@
+from .a2cc import a2cc
 from .a_bracket import a_bracket
 from .compensate_renorm import compensate_renorm
 from .convert_units import convert_units
@@ -7,6 +8,7 @@ from .dx import dx
 from .dz import dz
 from .eval_field import eval_field
 from .field_data import field_data
+from .field_spectrum import field_spectrum
 from .flux_average_field import flux_average_field
 from .get_colors import get_colors
 from .get_normalizations import get_normalizations
@@ -18,6 +20,7 @@ from .make_units import make_units
 from .parse_units import parse_units
 from .laplacian import laplacian
 from .read_field import read_field
+from .read_field_spectrum import read_field_spectrum
 from .read_lcfs import read_lcfs
 from .read_mesh import read_mesh
 from .radius_matrix import radius_matrix
@@ -39,13 +42,16 @@ from .nulls import nulls
 from .get_lcfs import get_lcfs
 from .plot_lcfs import plot_lcfs
 from .plot_mesh import plot_mesh
+from .plot_shape import plot_shape
 from .plot_wall_regions import plot_wall_regions
 from .plot_coils import plot_coils
 from .plot_mag_probes import plot_mag_probes
 from .plot_field import plot_field
+from .plot_field_spectrum import plot_field_spectrum
 from .plot_scalar import plot_scalar
 from .plot_hmn import plot_hmn
 from .plot_signals import plot_signals
+from .schaffer_plot import schaffer_plot
 from .read_signals import read_signals
 from .read_signals_zeropoint import read_signals_zeropoint
 from .power_spectrum import power_spectrum
@@ -55,6 +61,7 @@ from .read_scalar import read_scalar
 from .time_name import time_name
 
 __all__ = [
+    "a2cc",
     "a_bracket",
     "convert_units",
     "compensate_renorm",
@@ -64,6 +71,7 @@ __all__ = [
     "dz",
     "eval_field",
     "field_data",
+    "field_spectrum",
     "flux_average_field",
     "get_colors",
     "get_normalizations",
@@ -75,6 +83,7 @@ __all__ = [
     "parse_units",
     "laplacian",
     "read_field",
+    "read_field_spectrum",
     "read_lcfs",
     "read_mesh",
     "radius_matrix",
@@ -93,16 +102,20 @@ __all__ = [
     "find_nulls",
     "nulls",
     "get_lcfs",
+    "load_eqdsk_a",
     "plot_lcfs",
     "plot_mesh",
+    "plot_shape",
     "plot_wall_regions",
     "plot_coils",
     "plot_legend",
     "plot_mag_probes",
     "plot_field",
+    "plot_field_spectrum",
     "plot_scalar",
     "plot_hmn",
     "plot_signals",
+    "schaffer_plot",
     "read_signals",
     "read_signals_zeropoint",
     "power_spectrum",
@@ -111,3 +124,4 @@ __all__ = [
     "read_scalar",
     "time_name",
 ]
+from .readaeqdsk import load_eqdsk_a

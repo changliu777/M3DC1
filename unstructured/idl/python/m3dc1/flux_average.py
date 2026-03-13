@@ -14,12 +14,15 @@ _READ_FIELD_KW = set(inspect.signature(read_field).parameters.keys())
 
 def flux_average(
     field,
+    timeslices=0,
     *,
+    psi_norm: bool = False,
+    phi_norm: bool = False,
+    rho: bool = False,
     psi=None,
     i0=None,
     x=None,
     z=None,
-    t=None,
     r0=None,
     flux=None,
     nflux=None,
@@ -48,6 +51,14 @@ def flux_average(
     """
     Python port of flux_average.pro (core behavior used by plotting routines).
     """
+    if "t" in kwargs:
+        if timeslices not in (0, None):
+            raise TypeError("flux_average() received both 'timeslices' and legacy 't'.")
+        timeslices = kwargs.pop("t")
+    ncoord = int(bool(psi_norm)) + int(bool(phi_norm)) + int(bool(rho))
+    if ncoord > 1:
+        raise TypeError("flux_average() accepts only one of 'psi_norm', 'phi_norm', or 'rho'.")
+
     read_kwargs = {k: v for k, v in kwargs.items() if k in _READ_FIELD_KW}
 
     if fc is None:
@@ -58,7 +69,7 @@ def flux_average(
             p = read_field(
                 "psi",
                 filename=filename,
-                timeslices=int(t or 0),
+                timeslices=int(timeslices or 0),
                 points=int(points),
                 equilibrium=True,
                 return_meta=True,
@@ -70,8 +81,16 @@ def flux_average(
             x = np.asarray(p.r, dtype=float).reshape(-1)
             z = np.asarray(p.z, dtype=float).reshape(-1)
         fc = flux_coordinates(psi0=psi, i0=i0, x=x, z=z, points=int(points), fbins=nb, tbins=int(points), filename=filename, **kwargs)
+    if phi_norm:
+        xvec = np.asarray(fc.phi_norm)
+    elif rho:
+        xvec = np.asarray(fc.rho)
+    elif psi_norm:
+        xvec = np.asarray(fc.psi_norm)
+    else:
+        xvec = np.asarray(fc.psi)
     if flux is not None:
-        flux[:] = np.asarray(fc.psi)
+        flux[:] = xvec
     if nflux is not None:
         nflux[:] = np.asarray(fc.psi_norm)
     if area is not None:
@@ -114,7 +133,7 @@ def flux_average(
 
         meta = read_field(
             field,
-            timeslices=int(t or 0),
+            timeslices=int(timeslices or 0),
             points=int(points or fc.m),
             linear=linear,
             complex=complex,

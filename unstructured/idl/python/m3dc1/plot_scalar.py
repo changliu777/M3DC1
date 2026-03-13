@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 import re
 from pathlib import Path
 from typing import Sequence
@@ -41,6 +42,8 @@ def plot_scalar(
     x: float | Sequence[float] | None = None,
     filename: str | Path | Sequence[str | Path] = "C1.h5",
     names: Sequence[str] | None = None,
+    xrange=None,
+    yrange=None,
     overplot: bool = False,
     difference: bool = False,
     ylog: bool = False,
@@ -64,6 +67,7 @@ def plot_scalar(
     factor: float = 1.0,
     versus: str | None = None,
     xabs: bool = False,
+    print: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Python port of plot_scalar.pro.
@@ -93,6 +97,8 @@ def plot_scalar(
                 scalarname,
                 x=xvals[i],
                 filename=f,
+                xrange=xrange,
+                yrange=yrange,
                 overplot=(i > 0) or overplot,
                 difference=difference,
                 ylog=ylog,
@@ -164,7 +170,6 @@ def plot_scalar(
     else:
         tdata = time
         xtitle = make_label("Time", t0=1, cgs=cgs, mks=mks)
-        print(xtitle)
 
     if versus:
         vmeta = read_scalar(versus, filename=filename, ipellet=ipellet, cgs=cgs, mks=mks, return_meta=True)
@@ -206,6 +211,14 @@ def plot_scalar(
     if outfile is not None:
         _write_outfile(outfile, np.asarray(tdata), np.asarray(data))
 
+    if print:
+        yvals = np.asarray(data, dtype=float)
+        if yvals.ndim != 1:
+            raise ValueError("plot_scalar(print=True) requires 1D plotted data.")
+        for i in range(0, yvals.size, 8):
+            chunk = yvals[i : i + 8]
+            builtins.print(" ".join(f"{value:12.6g}" for value in chunk))
+
     if x is None:
         if not overplot:
             plt.figure(figsize=(10, 5))
@@ -230,6 +243,45 @@ def plot_scalar(
         plt.xscale("log")
     if ylog:
         plt.yscale("log")
+    if xrange is not None:
+        plt.xlim(xrange)
+    elif not xlog:
+        xmax = plt.xlim()[1]
+        plt.xlim(left=0.0, right=xmax)
+    if yrange is not None:
+        plt.ylim(yrange)
+    elif not ylog:
+        yvals = np.asarray(data, dtype=float)
+        if xrange is not None and x is None:
+            xvals = np.asarray(tdata, dtype=float) * float(xscale)
+            if xvals.ndim == 1 and xvals.size > 0:
+                xmin = float(np.min(np.asarray(xrange, dtype=float)))
+                xmax = float(np.max(np.asarray(xrange, dtype=float)))
+                xmask = (xvals >= xmin) & (xvals <= xmax)
+                if np.any(xmask):
+                    if yvals.ndim == 1:
+                        yvals = yvals[xmask]
+                    else:
+                        yvals = yvals[:, xmask]
+        finite = yvals[np.isfinite(yvals)]
+        if growth_rate:
+            finite_ylim = finite[finite >= -7.0]
+            if finite_ylim.size > 0:
+                finite = finite_ylim
+        if finite.size > 0:
+            ymin = float(np.min(finite))
+            ymax = float(np.max(finite))
+            if ymax > ymin:
+                yrange_pad = 0.1 * (ymax - ymin)
+                ymin_pad = ymin - yrange_pad
+                ymax_pad = ymax + yrange_pad
+            else:
+                yrange_pad = max(abs(ymin), 1.0) * 0.1
+                ymin_pad = ymin - yrange_pad
+                ymax_pad = ymax + yrange_pad
+            plt.ylim(bottom=ymin_pad, top=ymax_pad)
+            if (ymin_pad < 0.0) and (ymax_pad > 0.0):
+                plt.axhline(0.0, color="black", linestyle="-", linewidth=0.8)
     plt.tight_layout()
 
     return np.asarray(tdata), np.asarray(data)

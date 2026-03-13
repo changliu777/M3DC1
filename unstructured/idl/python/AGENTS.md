@@ -91,3 +91,37 @@
 - Magnetic probe plotting naming:
   - Python entry is `plot_mag_probes(...)` (plural), corresponding to IDL `plot_mag_probes.pro` in the upper-level IDL directory.
   - It returns `(tdata, data)` and wraps `plot_signals("mag_probes", ...)`.
+- Plot printing helpers:
+  - `plot_scalar.py` supports `print=True` to print the plotted 1D y-data.
+  - `plot_flux_average.py` supports `print=True` to print the plotted 1D y-data.
+  - Printed numeric output should use fixed-width aligned columns with 8 values per row and general-format precision equivalent to `"{value:12.6g}"`.
+- Plot auto-ylim conventions:
+  - `plot_scalar.py`, `plot_flux_average.py`, `plot_signals.py`, and `plot_field_spectrum.py` use 10% padding on both sides of the plotted y-range when auto-setting `ylim`.
+  - Add a horizontal line at `y=0` when the padded y-limits cross zero.
+- `plot_scalar.py` axis conventions:
+  - Public arguments use `xrange` and `yrange`.
+  - If `xrange` is not set and `xlog` is false, the x-axis should start at `0`.
+  - If `xrange` is set and `yrange` is not, derive y-limits from the visible x-window only.
+  - Use a tolerance of `1e-9` when deciding whether data is effectively all positive or all negative.
+- `flux_average.py` / `plot_flux_average.py` interface updates:
+  - Public argument name is `timeslices`.
+  - Accept `psi_norm`, `phi_norm`, and `rho` to select the x-axis coordinate.
+  - In `plot_flux_average.py`, force the x-axis to `[0, 1]` on linear scale.
+  - In `plot_flux_average.py`, use a tolerance of `0.001` for sign/near-zero decisions.
+- `flux_average_field.py` correctness fix:
+  - Do not transpose the `field_at_point(...)` output before flux-surface averaging.
+- `field_spectrum.py` / `read_field_spectrum.py` / `plot_field_spectrum.py` conventions:
+  - Default to reading fields with `complex=True` for spectrum calculations, with fallback to real data if the complex companion field is missing.
+  - `read_field_spectrum.py` defaults to `pest=True` if none of `pest`, `boozer`, `hamada`, or `fast` is selected.
+  - `field_spectrum.py` and `read_field_spectrum.py` support `m_val`; `read_field_spectrum.py` also accepts `m_vals` as an alias.
+  - `field_spectrum.py` supports x-axis selection via `psi_norm`, `phi_norm`, and `rho`.
+  - `plot_field_spectrum.py` should use Matplotlib default `axes.prop_cycle` colors.
+  - If `m_val` is not provided to `plot_field_spectrum.py`, choose the 5 `m` values with the largest maximum absolute amplitudes and plot those.
+- `contour_and_legend.py` level handling:
+  - In `contour_and_legend_single(...)`, if explicit contour level values are provided, expand that existing level span by 1% and regenerate the same number of levels over the expanded span.
+  - If contour levels are not provided, or only a level count is provided, build levels from the panel min/max and expand that span by 1%.
+- `a2cc.f90` migration notes:
+  - Python port lives in `m3dc1/a2cc.py` and related EQDSK-A parsing logic lives in a separate module.
+  - Preserve Fortran-style comments and split helper modules when the original Fortran calls another file.
+  - Map Fortran `write(*,...)` to Python `print(...)` on stdout.
+  - Map Fortran `write(0,...)` to Python `print(..., file=sys.stderr)`.

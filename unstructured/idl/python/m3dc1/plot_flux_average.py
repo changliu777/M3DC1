@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 from pathlib import Path
 from typing import Sequence
 
@@ -62,9 +63,12 @@ def _assign_output(target, values: np.ndarray) -> None:
 
 def plot_flux_average(
     field,
-    time=0,
+    timeslices=0,
     *,
     filename: str | Path | Sequence[str | Path] = "C1.h5",
+    psi_norm: bool = False,
+    phi_norm: bool = False,
+    rho: bool = False,
     complex: bool = False,
     color=None,
     names=None,
@@ -90,7 +94,6 @@ def plot_flux_average(
     mks: bool = False,
     cgs: bool = False,
     q_contours=None,
-    rho: bool = False,
     integrate: bool = False,
     multiply_flux: float = 0.0,
     abs: bool = False,
@@ -101,13 +104,22 @@ def plot_flux_average(
     val_at_q=None,
     flux_at_q_out=None,
     regularize: bool = False,
+    print: bool = False,
     **kwargs,
 ):
     """
     Python port of plot_flux_average.pro.
     """
+    if "time" in kwargs:
+        if timeslices not in (0, None):
+            raise TypeError("plot_flux_average() received both 'timeslices' and legacy 'time'.")
+        timeslices = kwargs.pop("time")
+    ncoord = int(bool(psi_norm)) + int(bool(phi_norm)) + int(bool(rho))
+    if ncoord > 1:
+        raise TypeError("plot_flux_average() accepts only one of 'psi_norm', 'phi_norm', or 'rho'.")
+
     if last:
-        time = int(read_parameter("ntime", filename=filename)) - 1
+        timeslices = int(read_parameter("ntime", filename=filename)) - 1
 
     if isinstance(field, (list, tuple, np.ndarray)) and not isinstance(field, str):
         ff = list(field)
@@ -119,8 +131,11 @@ def plot_flux_average(
             qcon = q_contours if i == 0 else None
             plot_flux_average(
                 f,
-                time,
+                timeslices,
                 filename=filename,
+                psi_norm=psi_norm,
+                phi_norm=phi_norm,
+                rho=rho,
                 complex=complex,
                 color=cols[i],
                 bins=bins,
@@ -145,7 +160,6 @@ def plot_flux_average(
                 mks=mks,
                 cgs=cgs,
                 q_contours=qcon,
-                rho=rho,
                 integrate=integrate,
                 multiply_flux=multiply_flux,
                 abs=abs,
@@ -153,6 +167,7 @@ def plot_flux_average(
                 stotal=stotal,
                 nolegend=True,
                 regularize=regularize,
+                print=print,
                 **kwargs,
             )
         if names is not None and not nolegend:
@@ -167,12 +182,15 @@ def plot_flux_average(
         n = len(fl)
         cols = [color] * n if color is not None else (["black"] * n if bw else list(get_colors(n + 2))[1 : n + 1])
         lss = list(linestyle) if isinstance(linestyle, (list, tuple)) else [linestyle] * n
-        tlist = list(time) if isinstance(time, (list, tuple, np.ndarray)) else [time] * n
+        tlist = list(timeslices) if isinstance(timeslices, (list, tuple, np.ndarray)) else [timeslices] * n
         for i, fn in enumerate(fl):
             plot_flux_average(
                 field,
                 tlist[i],
                 filename=fn,
+                psi_norm=psi_norm,
+                phi_norm=phi_norm,
+                rho=rho,
                 complex=complex,
                 color=cols[i],
                 bins=bins,
@@ -197,7 +215,6 @@ def plot_flux_average(
                 mks=mks,
                 cgs=cgs,
                 q_contours=q_contours,
-                rho=rho,
                 integrate=integrate,
                 multiply_flux=multiply_flux,
                 abs=abs,
@@ -206,6 +223,7 @@ def plot_flux_average(
                 nolegend=True,
                 outfile=None if not isinstance(outfile, (list, tuple)) else outfile[i],
                 regularize=regularize,
+                print=print,
                 **kwargs,
             )
         if names is not None and not nolegend:
@@ -215,8 +233,8 @@ def plot_flux_average(
             return ax.figure, ax
         return None, None
 
-    if isinstance(time, (list, tuple, np.ndarray)) and np.asarray(time).size > 1:
-        tv = np.asarray(time).reshape(-1)
+    if isinstance(timeslices, (list, tuple, np.ndarray)) and np.asarray(timeslices).size > 1:
+        tv = np.asarray(timeslices).reshape(-1)
         n = tv.size
         cols = [color] * n if color is not None else (["black"] * n if bw else list(get_colors(n + 2))[1 : n + 1])
         lss = list(linestyle) if isinstance(linestyle, (list, tuple)) else [linestyle] * n
@@ -226,6 +244,9 @@ def plot_flux_average(
                 field,
                 int(tv[i]),
                 filename=filename,
+                psi_norm=psi_norm,
+                phi_norm=phi_norm,
+                rho=rho,
                 complex=complex,
                 color=cols[i],
                 bins=bins,
@@ -250,7 +271,6 @@ def plot_flux_average(
                 mks=mks,
                 cgs=cgs,
                 q_contours=q_contours,
-                rho=rho,
                 integrate=integrate,
                 multiply_flux=multiply_flux,
                 abs=abs,
@@ -258,6 +278,7 @@ def plot_flux_average(
                 stotal=stotal,
                 nolegend=True,
                 regularize=regularize,
+                print=print,
                 **kwargs,
             )
             ts = float(np.asarray(get_slice_time(filename=filename, slice=int(tv[i]), cgs=cgs, mks=mks)).reshape(-1)[0])
@@ -274,7 +295,10 @@ def plot_flux_average(
 
     vals, title, symbol, units, fc = flux_average(
         field,
-        t=time,
+        timeslices=timeslices,
+        psi_norm=psi_norm,
+        phi_norm=phi_norm,
+        rho=rho,
         bins=bins,
         points=points,
         linear=linear,
@@ -307,9 +331,9 @@ def plot_flux_average(
     if rms:
         fa2 = np.asarray(
             flux_average(
-                np.asarray(read_field(field, filename=filename, timeslices=int(time), points=points, linear=linear, complex=complex, abs=abs, phase=phase, return_meta=False, **kwargs))
+                np.asarray(read_field(field, filename=filename, timeslices=int(timeslices), points=points, linear=linear, complex=complex, abs=abs, phase=phase, return_meta=False, **kwargs))
                 ** 2,
-                t=time,
+                timeslices=timeslices,
                 bins=bins,
                 points=points,
                 filename=filename,
@@ -329,14 +353,18 @@ def plot_flux_average(
         xtitle = "sqrt(psi_n)"
         lcfs_psi = 1.0
     elif minor_radius:
-        rvals = flux_average("r", t=time, bins=bins, points=points, linear=linear, fac=fac, filename=filename, mks=mks, cgs=cgs, return_meta=False, **kwargs)
+        rvals = flux_average("r", timeslices=timeslices, bins=bins, points=points, linear=linear, fac=fac, filename=filename, mks=mks, cgs=cgs, return_meta=False, **kwargs)
         flux = np.asarray(rvals, dtype=float)
         xtitle = "minor radius"
+    elif phi_norm:
+        flux = np.asarray(fc.phi_norm, dtype=float)
+        xtitle = "phi_norm"
+        lcfs_psi = 1.0
     elif rho:
         flux = np.asarray(fc.rho, dtype=float)
         xtitle = "rho"
         lcfs_psi = 1.0
-    elif normalized_flux:
+    elif psi_norm or normalized_flux:
         flux = nflux
         xtitle = "psi_n"
         lcfs_psi = 1.0
@@ -360,6 +388,25 @@ def plot_flux_average(
         plt.xscale("log")
     if ylog:
         plt.yscale("log")
+    if not xlog:
+        plt.xlim(0.0, 1.0)
+    if not ylog:
+        yvals = np.asarray(np.real(fa), dtype=float).reshape(-1)
+        yvals = yvals[np.isfinite(yvals)]
+        if yvals.size > 0:
+            ymin = float(np.min(yvals))
+            ymax = float(np.max(yvals))
+            if ymax > ymin:
+                yrange_pad = 0.1 * (ymax - ymin)
+                ymin_pad = ymin - yrange_pad
+                ymax_pad = ymax + yrange_pad
+            else:
+                yrange_pad = max(abs(ymin), 1.0) * 0.1
+                ymin_pad = ymin - yrange_pad
+                ymax_pad = ymax + yrange_pad
+            plt.ylim(bottom=ymin_pad, top=ymax_pad)
+            if (ymin_pad < 0.0) and (ymax_pad > 0.0):
+                plt.axhline(0.0, color="k", linestyle="-", linewidth=0.8)
 
     if lcfs:
         y0, y1 = plt.ylim()
@@ -378,6 +425,12 @@ def plot_flux_average(
 
     if outfile is not None:
         _write_outfile(outfile, flux, fa, complex_mode=complex)
+
+    if print:
+        yvals = np.asarray(np.real(fa), dtype=float).reshape(-1)
+        for i in range(0, yvals.size, 8):
+            chunk = yvals[i : i + 8]
+            builtins.print(" ".join(f"{value:12.6g}" for value in chunk))
 
     ax = plt.gca()
     return ax.figure, ax

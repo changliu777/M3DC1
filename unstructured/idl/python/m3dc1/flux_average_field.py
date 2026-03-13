@@ -43,7 +43,6 @@ def flux_average_field(
     vals = np.asarray(field_at_point(f, np.asarray(x), np.asarray(z), fc.r, fc.z))
     if vals.ndim == 2:
         vals = vals[None, :, :]
-    vals = np.transpose(vals, (0, 2, 1))  # [k, m, n]
 
     out = np.zeros((vals.shape[0], fc.n), dtype=np.complex128 if np.iscomplexobj(vals) else float)
     for j in range(fc.n):

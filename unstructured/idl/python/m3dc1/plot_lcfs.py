@@ -20,4 +20,3 @@ def plot_lcfs(psi=None, x=None, z=None, *, psival=None, over=False, color="k", f
         plt.plot(xy[0, :], xy[1, :], color=color, linewidth=1.5)
         plt.gca().set_aspect("equal", adjustable="box")
     return np.asarray(xy)
-

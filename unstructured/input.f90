@@ -507,7 +507,7 @@ subroutine set_defaults
   call add_var_double("dtmax",dtmax,40.,"maximum time step",time_grp)
   call add_var_double("dtkecrit",dtkecrit,0.0,"ekin limit on timestep",time_grp)
   call add_var_double("dtfrac",dtfrac,0.1,"fractional change of time step",time_grp)
-  call add_var_int("max_repeat", max_repeat, 3, &
+  call add_var_int("max_repeat", max_repeat, 1, &
        "maximum number of times a time step can be attempted", time_grp)
   call add_var_int("ksp_max", ksp_max, 10000, &
        "maximum number of ksp iterations without repeating time step", time_grp)

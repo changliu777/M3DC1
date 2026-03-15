@@ -1486,13 +1486,13 @@ subroutine fdot(x, v, w, dxdt, dvdt, dwdt, dEpdt, itri, kel, f00, ierr, sps, B00
          end select
          !call mesh_search(kel(ipoint), x2, itri2)
          !kel(ipoint)=itri2
-         call get_geom_terms(x2, kel(ipoint), geomterms2, .false., ierr)
+         call get_geom_terms(x2, kel(ipoint), geomterms2, vspdims .eq. 2, ierr)
          if (ierr .ne. 0) then
             return
          end if
 #ifdef USEST
          !Get electric field components
-         Rinv2 = 1.0/dot_product(elfieldcoefs(ipoint)%rst,geomterms2%g)
+         Rinv2 = 1.0/dot_product(elfieldcoefs(kel(ipoint))%rst,geomterms2%g)
          !Rinv = 1.0
          !dRdphi = dot_product(elfieldcoefs(itri)%rst,geomterms%dphi)
          !dZdphi = dot_product(elfieldcoefs(itri)%zst,geomterms%dphi)

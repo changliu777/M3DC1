@@ -28,6 +28,8 @@ def contour_and_legend_single(
     contour_levels,
     vmin,
     vmax,
+    fill: bool,
+    colorbar: bool,
     lines: bool,
     label: str,
     title: str,
@@ -68,26 +70,29 @@ def contour_and_legend_single(
         level_pad = 0.01 * max(abs(level_min), abs(level_max), 1.0)
     contour_levels_use = np.linspace(level_min - level_pad, level_max + level_pad, nlevels)
 
-    cf = ax.contourf(
-        xv,
-        yv,
-        panel.T,
-        levels=contour_levels_use,
-        vmin=vmin,
-        vmax=vmax,
-        cmap=cmap_obj,
-        extend="both",
-    )
-    if lines:
+    cf = None
+    if fill:
+        cf = ax.contourf(
+            xv,
+            yv,
+            panel.T,
+            levels=contour_levels_use,
+            vmin=vmin,
+            vmax=vmax,
+            cmap=cmap_obj,
+            extend="both",
+        )
+    if lines or not fill:
         ax.contour(xv, yv, panel.T, levels=contour_levels_use, colors="k", linewidths=0.5)
 
-    if colorbar_figure is None:
-        if label:
-            plt.colorbar(cf, ax=ax, label=label)
+    if fill and colorbar and cf is not None:
+        if colorbar_figure is None:
+            if label:
+                plt.colorbar(cf, ax=ax, label=label)
+            else:
+                plt.colorbar(cf, ax=ax)
         else:
-            plt.colorbar(cf, ax=ax)
-    else:
-        colorbar_figure.colorbar(cf, ax=ax, label=label)
+            colorbar_figure.colorbar(cf, ax=ax, label=label)
 
     if title:
         ax.set_title(str(title))
@@ -106,6 +111,8 @@ def contour_and_legend(
     range=None,
     levels=None,
     title="",
+    fill: bool = True,
+    colorbar: bool = True,
     lines=False,
     overplot=False,
     cmap: str | None = None,
@@ -163,6 +170,8 @@ def contour_and_legend(
             contour_levels=contour_levels,
             vmin=vmin,
             vmax=vmax,
+            fill=fill,
+            colorbar=colorbar,
             lines=lines,
             label=labels[0],
             title=titles[0],
@@ -188,6 +197,8 @@ def contour_and_legend(
                 contour_levels=contour_levels,
                 vmin=vmin,
                 vmax=vmax,
+                fill=fill,
+                colorbar=colorbar,
                 lines=lines,
                 label=labels[i],
                 title=titles[i],

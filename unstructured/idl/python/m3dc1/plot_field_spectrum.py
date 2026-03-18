@@ -10,13 +10,39 @@ from .read_field_spectrum import read_field_spectrum
 from .read_parameter import read_parameter
 
 
-def _interp_indices(values, targets) -> np.ndarray:
+def _find_profile_crossings(values, xvals, target: float) -> np.ndarray:
     vals = np.asarray(values, dtype=float).reshape(-1)
-    tgt = np.asarray(targets, dtype=float).reshape(-1)
-    if vals.size == 0 or tgt.size == 0:
+    xx = np.asarray(xvals, dtype=float).reshape(-1)
+    n = min(vals.size, xx.size)
+    if n < 2:
         return np.asarray([], dtype=float)
-    order = np.argsort(vals)
-    return np.interp(tgt, vals[order], np.arange(vals.size, dtype=float)[order])
+    vals = vals[:n]
+    xx = xx[:n]
+    out: list[float] = []
+    for i in range(n - 1):
+        v0 = vals[i]
+        v1 = vals[i + 1]
+        x0 = xx[i]
+        x1 = xx[i + 1]
+        if not (np.isfinite(v0) and np.isfinite(v1) and np.isfinite(x0) and np.isfinite(x1)):
+            continue
+        d0 = v0 - target
+        d1 = v1 - target
+        if d0 == 0.0:
+            out.append(float(x0))
+        if d0 == 0.0 and d1 == 0.0:
+            out.append(float(x1))
+            continue
+        if d0 * d1 < 0.0:
+            frac = (target - v0) / (v1 - v0)
+            out.append(float(x0 + frac * (x1 - x0)))
+        elif d1 == 0.0:
+            out.append(float(x1))
+    if not out:
+        return np.asarray([], dtype=float)
+    arr = np.asarray(out, dtype=float)
+    arr = np.unique(np.round(arr, decimals=12))
+    return np.sort(arr)
 
 
 def plot_field_spectrum(
@@ -116,7 +142,8 @@ def plot_field_spectrum(
     d = np.asarray(spec.data, dtype=np.complex128)
     m = np.asarray(spec.m, dtype=int)
     if m_val is None:
-        amp = np.max(np.abs(d), axis=(0, 2))
+        amp = np.nanmax(np.abs(d), axis=(0, 2))
+        amp = np.where(np.isfinite(amp), amp, -np.inf)
         take = min(5, int(m.size))
         idx = np.argsort(amp)[-take:][::-1]
         mvals = m[idx]
@@ -128,7 +155,6 @@ def plot_field_spectrum(
     qprof = np.asarray(spec.fc.q, dtype=float)
     ntor = int(read_parameter("ntor", filename=filename, cgs=cgs, mks=mks))
     q_target = np.abs(mvals / float(ntor))
-    indices = _interp_indices(np.abs(qprof), q_target)
     ax = plt.gca() if overplot else plt.subplots(figsize=(7, 5))[1]
     fig = ax.figure
     cycle = plt.rcParams["axes.prop_cycle"].by_key().get("color", [])
@@ -151,8 +177,7 @@ def plot_field_spectrum(
             ax.set_xlabel(xlabel)
             ax.set_ylabel(ytitle)
         ax.plot(xplot, data, color=colors[i], linestyle=linestyle)
-        if i < indices.size:
-            fv = float(np.interp(indices[i], np.arange(nflux.size, dtype=float), xplot))
+        for fv in _find_profile_crossings(np.abs(qprof), xplot, float(q_target[i])):
             ax.axvline(fv, color=colors[i], linestyle="--", linewidth=0.8)
 
     ax.set_xlim(0.0, 1.0)

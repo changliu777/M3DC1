@@ -302,6 +302,14 @@ contains
        istartnew = 1
        time = 0
     end if
+    if(eqsubtract_in.eq.1 .and. eqsubtract.eq.0) then
+       if(myrank.eq.0) then
+          print *, 'Restarting while changing eqsubtract from 0 to 1'
+          print *, 'Previous data will be overwritten.'
+       end if
+       istartnew = 1
+       time = 0
+    end if
     if(icomplex.eq.1 .and. icomplex_in.eq.0) then
        if(myrank.eq.0) then
           print *, 'Starting complex calculation from 2D real calculation.'
@@ -331,18 +339,18 @@ contains
        call hdf5_finalize(error)
        call hdf5_initialize(.false., error)
 
-       if(eqsubtract.eq.0) then
-         ! move data to field0 so that equilibrium data is written correctly
-         field0_vec = field_vec
-         field_vec = 0.
-         nre_field(0) = nre_field(1)
-         nre_field(1) = 0.
-       endif
-       call init_perturbations
-       if(eqsubtract.eq.0) then
-         call add_field_to_field(nre_field(1),nre_field(0))
-         nre_field(0) = 0.
-      endif
+      !  if(eqsubtract.eq.0) then
+      !    ! move data to field0 so that equilibrium data is written correctly
+      !    field0_vec = field_vec
+      !    field_vec = 0.
+      !    nre_field(0) = nre_field(1)
+      !    nre_field(1) = 0.
+      !  endif
+      !  call init_perturbations
+      !  if(eqsubtract.eq.0) then
+      !    call add_field_to_field(nre_field(1),nre_field(0))
+      !    nre_field(0) = 0.
+      ! endif
 
       ! For RMP and error fields
       if(irmp.ge.1 .or. iread_ext_field.ge.1 .or. &

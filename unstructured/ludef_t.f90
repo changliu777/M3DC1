@@ -2048,6 +2048,9 @@ subroutine flux_lin(trialx, lin, ssterm, ddterm, q_ni, r_bf, q_bf, izone)
 
      endif
 
+     !tempx = b1jrebeta    (trialx,lin,bz179,eta79,bi79)
+     !     ssterm(:,nre_g) = ssterm(:,nre_g) -     thimpb     *dt*tempx
+     !     ddterm(:,nre_g) = ddterm(:,nre_g) + (1.-thimpb*bdf)*dt*tempx
      if(numvar.ge.2) then
         tempx = b1bu  (trialx,lin,ph179) &
              + b1bv  (trialx,lin,vz179) &

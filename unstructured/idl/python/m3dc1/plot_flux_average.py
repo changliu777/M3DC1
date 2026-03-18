@@ -293,7 +293,7 @@ def plot_flux_average(
             return ax.figure, ax
         return None, None
 
-    vals, title, symbol, units, fc = flux_average(
+    meta = flux_average(
         field,
         timeslices=timeslices,
         psi_norm=psi_norm,
@@ -315,17 +315,17 @@ def plot_flux_average(
         return_meta=True,
         **kwargs,
     )
-    fa = np.asarray(vals)
+    fa = np.asarray(meta.data)
     if fa.size <= 1:
         return None, None
 
-    ytitle = symbol
-    if units:
-        ytitle = f"{ytitle} ({units})"
+    ytitle = meta.symbol
+    if meta.units:
+        ytitle = f"{ytitle} ({meta.units})"
     xtitle = "psi"
 
-    flux = np.asarray(fc.psi, dtype=float)
-    nflux = np.asarray(fc.psi_norm, dtype=float)
+    flux = np.asarray(meta.fc.psi, dtype=float)
+    nflux = np.asarray(meta.fc.psi_norm, dtype=float)
     lcfs_psi = float(nflux[-1]) if nflux.size > 0 else 1.0
 
     if rms:
@@ -357,11 +357,11 @@ def plot_flux_average(
         flux = np.asarray(rvals, dtype=float)
         xtitle = "minor radius"
     elif phi_norm:
-        flux = np.asarray(fc.phi_norm, dtype=float)
+        flux = np.asarray(meta.fc.phi_norm, dtype=float)
         xtitle = "phi_norm"
         lcfs_psi = 1.0
     elif rho:
-        flux = np.asarray(fc.rho, dtype=float)
+        flux = np.asarray(meta.fc.rho, dtype=float)
         xtitle = "rho"
         lcfs_psi = 1.0
     elif psi_norm or normalized_flux:
@@ -382,8 +382,8 @@ def plot_flux_average(
     plt.plot(flux, np.real(fa), color=color, linestyle=linestyle)
     plt.xlabel(xtitle)
     plt.ylabel(ytitle)
-    if title:
-        plt.title(title)
+    if meta.title:
+        plt.title(meta.title)
     if xlog:
         plt.xscale("log")
     if ylog:

@@ -484,13 +484,14 @@ def flux_coordinates(
         omega[:, :] = np.nan_to_num(omega, nan=0.0, posinf=0.0, neginf=0.0)
 
     if not fast:
-        den = float(phi[-1])
+        finite_phi = np.asarray(phi, dtype=float)[np.isfinite(phi)]
+        den = float(finite_phi[-1]) if finite_phi.size > 0 else 0.0
         if abs(den) < np.finfo(float).tiny:
             phi_norm = np.zeros_like(phi)
             rho = np.zeros_like(phi)
         else:
             phi_norm = phi / den
-            rho = np.sqrt(phi_norm)
+            rho = np.sqrt(np.clip(phi_norm, 0.0, None))
     else:
         phi_norm = np.zeros_like(phi)
         rho = np.zeros_like(phi)

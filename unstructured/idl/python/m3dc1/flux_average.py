@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 import inspect
 import numpy as np
 
@@ -10,6 +11,15 @@ from .parse_units import parse_units
 from .read_field import read_field
 
 _READ_FIELD_KW = set(inspect.signature(read_field).parameters.keys())
+
+
+@dataclass
+class FluxAverageResult:
+    data: np.ndarray
+    title: str
+    symbol: str
+    units: str
+    fc: object
 
 
 def flux_average(
@@ -104,7 +114,7 @@ def flux_average(
             sym = "$q$"
             u = ""
             if return_meta:
-                return vals, title, sym, u, fc
+                return FluxAverageResult(data=np.asarray(vals), title=title, symbol=sym, units=u, fc=fc)
             return vals
         if fkey == "rho":
             vals = np.asarray(fc.rho, dtype=float)
@@ -112,23 +122,23 @@ def flux_average(
             sym = "$\\rho$"
             u = parse_units(dimensions(l0=1), cgs=cgs, mks=mks)
             if return_meta:
-                return vals, title, sym, u, fc
+                return FluxAverageResult(data=np.asarray(vals), title=title, symbol=sym, units=u, fc=fc)
             return vals
         if fkey == "flux_t":
             vals = np.asarray(fc.flux_tor, dtype=float)
             if return_meta:
-                return vals, "Toroidal Flux", "$\\Phi_t$", "", fc
+                return FluxAverageResult(data=np.asarray(vals), title="Toroidal Flux", symbol="$\\Phi_t$", units="", fc=fc)
             return vals
         if fkey == "flux_p":
             vals = np.asarray(fc.flux_pol, dtype=float)
             if return_meta:
-                return vals, "Poloidal Flux", "$\\Phi_p$", "", fc
+                return FluxAverageResult(data=np.asarray(vals), title="Poloidal Flux", symbol="$\\Phi_p$", units="", fc=fc)
             return vals
         if fkey == "volume":
             vals = np.asarray(fc.V, dtype=float)
             u = parse_units(dimensions(l0=3), cgs=cgs, mks=mks)
             if return_meta:
-                return vals, "Volume", "$V$", u, fc
+                return FluxAverageResult(data=np.asarray(vals), title="Volume", symbol="$V$", units=u, fc=fc)
             return vals
 
         meta = read_field(
@@ -165,7 +175,7 @@ def flux_average(
         sym = str(meta.symbol) if not integrate and not stotal else str(meta.symbol)
         u = str(meta.units)
         if return_meta:
-            return np.asarray(vals), title, sym, u, fc
+            return FluxAverageResult(data=np.asarray(vals), title=title, symbol=sym, units=u, fc=fc)
         return np.asarray(vals)
 
     vals = flux_average_field(
@@ -181,5 +191,5 @@ def flux_average(
         **kwargs,
     )
     if return_meta:
-        return np.asarray(vals), "", "", "", fc
+        return FluxAverageResult(data=np.asarray(vals), title="", symbol="", units="", fc=fc)
     return np.asarray(vals)

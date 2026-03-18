@@ -75,6 +75,7 @@ def plot_field(
     logical: bool = False,
     realtime=None,
     levels=None,
+    colorbar: bool = True,
     phase: bool = False,
     abs: bool = False,
     operation: int = 1,
@@ -240,6 +241,7 @@ def plot_field(
             ytitle="psi",
             cmap=cmap,
             range=range,
+            colorbar=colorbar,
             overplot=overplot,
             **plot_kwargs,
         )
@@ -259,6 +261,7 @@ def plot_field(
         xtitle=make_label("R", l0=1, **label_kwargs),
         ytitle=make_label("Z", l0=1, **label_kwargs),
         range=range,
+        colorbar=colorbar,
         overplot=overplot,
         **plot_kwargs,
     )

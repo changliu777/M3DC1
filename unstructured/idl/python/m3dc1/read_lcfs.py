@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
+from .get_slice_time import get_slice_time
 from .read_parameter import read_parameter
 from .read_scalar import read_scalar
 
@@ -31,8 +32,23 @@ def read_lcfs(
     if n == 0:
         raise ValueError("No scalar time data found.")
 
-    idx = n - 1 if last else (0 if slice is None else int(slice))
+    if last:
+        idx = n - 1
+    elif slice is None:
+        idx = 0
+    else:
+        idx = int(slice)
+        if idx < 0:
+            idx = n + idx
     idx = max(0, min(idx, n - 1))
+
+    t0 = np.asarray(get_slice_time(filename=filename, slice=idx, cgs=cgs, mks=mks), dtype=float).reshape(-1)
+    if t0.size > 0:
+        it = int(np.argmin(np.abs(tvec - t0[0])))
+        print("slice time = ", t0)
+        print("time step time: ", float(tvec[it]))
+        print("time slice: ", it)
+        idx = it
 
     # Fallback-safe scalar arrays
     def _at(name: str, default: float = 0.0) -> float:

@@ -15,7 +15,7 @@ class LcfsInfo:
     xpoint: np.ndarray
 
 
-def lcfs(psi, x, z, *, axis=None, xpoint=None, flux0=None, filename="C1.h5", **kwargs) -> LcfsInfo:
+def lcfs(psi, x, z, *, axis=None, xpoint=None, flux0=None, filename="C1.h5", slice: int | None = None, **kwargs) -> LcfsInfo:
     """
     Lightweight lcfs.pro-style helper.
     """
@@ -26,7 +26,7 @@ def lcfs(psi, x, z, *, axis=None, xpoint=None, flux0=None, filename="C1.h5", **k
     zv = np.asarray(z, dtype=float).reshape(-1)
 
     try:
-        meta = read_lcfs(filename=filename, return_meta=True, **kwargs)
+        meta = read_lcfs(filename=filename, slice=slice, return_meta=True, **kwargs)
         ax = np.asarray(meta.axis, dtype=float)
         xp = np.asarray(meta.xpoint, dtype=float)
         f0 = float(meta.flux0)
@@ -39,4 +39,3 @@ def lcfs(psi, x, z, *, axis=None, xpoint=None, flux0=None, filename="C1.h5", **k
         ps = float(np.nanmax(p))
 
     return LcfsInfo(psilim=ps, flux0=f0, axis=ax, xpoint=xp)
-

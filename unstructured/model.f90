@@ -363,6 +363,7 @@ subroutine boundary_vel(rhs, u_v, vz_v, chi_v, mat)
            temp = 0.
 #else
            call get_node_data(vz_field(1), i, temp)
+           temp = 0.
 #endif
            call set_dirichlet_bc(i_vz,rhs,temp,normal,curv,izonedim,mat)
         end if
@@ -521,6 +522,7 @@ subroutine boundary_mag(rhs, psi_v, bz_v, bfp_v, e_v, mat)
      if(inocurrent_pol.eq.1 .and. numvar.ge.2) then
         call get_node_data(bz_field(1), i, temp)
         if(idiff .gt. 0) temp = 0
+        temp = 0
         call set_normal_bc(i_bz,rhs,temp,normal,curv,izonedim,mat)
      end if
 
@@ -570,6 +572,69 @@ subroutine boundary_mag(rhs, psi_v, bz_v, bfp_v, e_v, mat)
   end do
 
 end subroutine boundary_mag
+
+subroutine boundary_mag2(rhs, psi_v, mat)
+  use math
+  use basic
+  use field
+  use arrays
+  use matrix_mod
+  use boundary_conditions
+
+  implicit none
+  
+  type(vector_type), intent(inout) :: rhs
+  type(field_type) :: psi_v
+  type(matrix_type), optional :: mat
+
+  vectype, dimension(dofs_per_node) :: temp !, temp2, temp3
+  real :: normal(2), curv(3), x, z, phi
+  integer :: i, izone, izonedim,  numnodes, icounter_t
+  integer :: i_psi
+  logical :: is_boundary
+
+  if(iper.eq.1 .and. jper.eq.1) return
+  if(myrank.eq.0 .and. iprint.ge.2) print *, "boundary_mag called"
+
+  numnodes = owned_nodes()
+  do icounter_t=1,numnodes
+     i = nodes_owned(icounter_t)
+     call boundary_node(i,is_boundary,izone,izonedim,normal,curv,x,phi,z)
+     if(.not.is_boundary) cycle
+
+     i_psi = node_index(psi_v, i)
+
+     ! constant normal field = -t.grad(psi)/R - n.grad(f')
+     if(iconst_bn.eq.1) then
+        call get_node_data(psi_field(1), i, temp)
+        ! add loop voltage
+         ! temp=temp-0.000005*x**2
+        call set_dirichlet_bc(i_psi,rhs,temp,normal,curv,izonedim,mat)
+     end if
+
+     ! no toroidal current = -Delta*(psi)/R
+     if(inocurrent_tor.eq.1) then       
+        temp = 0.
+        call set_laplacian_bc(i_psi,rhs,temp,normal,curv,izonedim,-x,mat)
+     end if
+
+     ! no normal current = n.Grad(psi')/R^2 - t.Grad(F)/R
+     if(inocurrent_norm.eq.1) then
+        if(i3d.eq.1) then
+!        if(numvar.ge.2) then
+!           call get_node_data(bz_field(1), i, temp2)
+!        else
+!           temp2 = 0.
+!        endif
+           call get_node_data(psi_field(1), i, temp)
+           if(idiff .gt. 0) temp = 0
+           call set_normalp_bc(i_psi,rhs,temp,normal,curv,izonedim,mat)
+        endif
+     endif
+
+  end do
+
+end subroutine boundary_mag2
 
 
 !=======================================================

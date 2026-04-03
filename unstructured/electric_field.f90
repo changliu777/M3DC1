@@ -20,21 +20,21 @@ subroutine electric_field_R(ilin,o,izone)
      temp79b = eta79(:,OP_1)
   end if
   
-  ! eta J
-  ! ~~~~~
-  if(ilin.eq.1) then
-     o = o - temp79b*bz179(:,OP_DZ)*ri_79
-#if defined(USE3D) || defined(USECOMPLEX)
-     o = o + temp79b* &
-          (ri2_79*ps179(:,OP_DRP) - ri_79*bfp179(:,OP_DZP))
-#endif
-  else
-     o = o - temp79b*bzt79(:,OP_DZ)*ri_79
-#if defined(USE3D) || defined(USECOMPLEX)
-     o = o + temp79b* &
-          (ri2_79*pst79(:,OP_DRP) - ri_79*bfpt79(:,OP_DZP))
-#endif
-  end if
+  ! ! eta J
+  ! ! ~~~~~
+  ! if(ilin.eq.1) then
+  !    o = o - temp79b*bz179(:,OP_DZ)*ri_79
+! #if defined(USE3D) || defined(USECOMPLEX)
+  !    o = o + temp79b* &
+  !         (ri2_79*ps179(:,OP_DRP) - ri_79*bfp179(:,OP_DZP))
+! #endif
+  ! else
+  !    o = o - temp79b*bzt79(:,OP_DZ)*ri_79
+! #if defined(USE3D) || defined(USECOMPLEX)
+  !    o = o + temp79b* &
+  !         (ri2_79*pst79(:,OP_DRP) - ri_79*bfpt79(:,OP_DZP))
+! #endif
+  ! end if
   if(izone.eq.ZONE_CONDUCTOR) return
 
   ! -VxB
@@ -148,21 +148,21 @@ subroutine electric_field_Z(ilin,o,izone)
      temp79b = eta79(:,OP_1)
   end if
   
-  ! eta J
-  ! ~~~~~
-  if(ilin.eq.1) then 
-     o = o + temp79b*bz179(:,OP_DR)*ri_79
-#if defined(USE3D) || defined(USECOMPLEX)
-     o = o + temp79b* &
-          (ri2_79*ps179(:,OP_DZP) + ri_79*bfp179(:,OP_DRP))
-#endif
-  else
-     o = o + temp79b*bzt79(:,OP_DR)*ri_79
-#if defined(USE3D) || defined(USECOMPLEX)
-     o = o + temp79b* &
-          (ri2_79*pst79(:,OP_DZP) + ri_79*bfpt79(:,OP_DRP))
-#endif
-  end if
+  ! ! eta J
+  ! ! ~~~~~
+  ! if(ilin.eq.1) then 
+  !    o = o + temp79b*bz179(:,OP_DR)*ri_79
+! #if defined(USE3D) || defined(USECOMPLEX)
+  !    o = o + temp79b* &
+  !         (ri2_79*ps179(:,OP_DZP) + ri_79*bfp179(:,OP_DRP))
+! #endif
+  ! else
+  !    o = o + temp79b*bzt79(:,OP_DR)*ri_79
+! #if defined(USE3D) || defined(USECOMPLEX)
+  !    o = o + temp79b* &
+  !         (ri2_79*pst79(:,OP_DZP) + ri_79*bfpt79(:,OP_DRP))
+! #endif
+  ! end if
   if(izone.eq.ZONE_CONDUCTOR) return
 
   ! -VxB
@@ -271,13 +271,13 @@ subroutine electric_field_phi(ilin,o, izone)
   o = 0.
   if(izone.eq.ZONE_VACUUM) return
 
-  ! eta J
-  ! ~~~~~
-  if(ilin.eq.1) then
-     o = o - ri_79*eta79(:,OP_1)*ps179(:,OP_GS)
-  else
-     o = o - ri_79*eta79(:,OP_1)*pst79(:,OP_GS)
-  end if
+  ! ! eta J
+  ! ! ~~~~~
+  ! if(ilin.eq.1) then
+  !    o = o - ri_79*eta79(:,OP_1)*ps179(:,OP_GS)
+  ! else
+  !    o = o - ri_79*eta79(:,OP_1)*pst79(:,OP_GS)
+  ! end if
   if(izone.eq.ZONE_CONDUCTOR) return
 
   ! VxB

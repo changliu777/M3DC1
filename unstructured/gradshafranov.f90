@@ -279,9 +279,11 @@ subroutine pf_coil_field(ierr)
 
      numcoils = 1
      xc(1) = 102.
-     zc(1) = rnorm
+     !zc(1) = rnorm
+     zc(1) = 0.
      ipole = 1
      ic = bv*fac2
+     write(0,*) xc(1),zc(1),ic(1)
 
   case default
      numcoils = 0
@@ -337,7 +339,8 @@ subroutine vacuum_field()
   !......define feedback parameters needed for normalization
   if(idevice .eq. 0) then
      xc(1) = 102.
-     zc(1) = rnorm
+     !zc(1) = rnorm
+     zc(1) = 0.
      xp = xlim
      zp = zlim
      call gvect0(xp,zp,1,xc,zc,1,g1,1,ierr)
@@ -358,6 +361,7 @@ subroutine vacuum_field()
      if(myrank.eq.0 .and. iprint.ge.1) &
           print *, "Calculating fields due to plasma"
      xc(1) = xmag
+     write(0,*) tcuro
      zc(1) = zmag
      ic(1) = tcuro/(2.*pi)
      call field_from_coils(xc,zc,ic,1,psi_field(0),0,ierr)
@@ -1321,6 +1325,7 @@ endif
      ! Find new magnetic axis and lcfs
      call lcfs(psi_vec,iwall_is_limiter.eq.1, &
           itnum.ge.igs_start_xpoint_search)
+     write(0,*) psimin, psibound
      if(psibound.eq.psimin) then
         if(myrank.eq.0) print *, 'ERROR: psimin = psilim = ', psibound
         call safestop(4)
@@ -3414,7 +3419,8 @@ subroutine boundary_gs(rhs, feedfac, mat)
            xp(1) = x
            zp(1) = z
            xc(1) = 102.
-           zc(1) = 10.
+           !zc(1) = 10.
+           zc(1) = 0.
            call gvect(xp,zp,1,xc,zc,1,g,1,ineg)
            temp(1:6) = g(1,1,1:6)*feedfac
            call add(psi_field(0), inode, temp)

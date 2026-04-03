@@ -136,6 +136,8 @@ contains
        ikprad_in = 0
     end if
 
+    if ((irunaway.gt.0).or.(kinetic.eq.1)) call read_real_attr(root_id, "bzsign", bzsign, error)
+
     ! Read Scalars
     call h5gopen_f(root_id, "scalars", scalar_group_id, error)
 
@@ -299,6 +301,17 @@ contains
        field_vec = 0.
        bfp_field(0) = bfp_field(1)
        bfp_field(1) = 0. 
+       u_field(0) = 0.
+       vz_field(0) = 0.
+       chi_field(0) = 0.
+       istartnew = 1
+       time = 0
+    end if
+    if(eqsubtract_in.eq.1 .and. eqsubtract.eq.0) then
+       if(myrank.eq.0) then
+          print *, 'Restarting while changing eqsubtract from 0 to 1'
+          print *, 'Previous data will be overwritten.'
+       end if
        istartnew = 1
        time = 0
     end if
@@ -331,18 +344,19 @@ contains
        call hdf5_finalize(error)
        call hdf5_initialize(.false., error)
 
-       if(eqsubtract.eq.0) then
-         ! move data to field0 so that equilibrium data is written correctly
-         field0_vec = field_vec
-         field_vec = 0.
-         nre_field(0) = nre_field(1)
-         nre_field(1) = 0.
-       endif
-       call init_perturbations
-       if(eqsubtract.eq.0) then
-         call add_field_to_field(nre_field(1),nre_field(0))
-         nre_field(0) = 0.
-      endif
+      !  if(eqsubtract.eq.0) then
+      !    ! move data to field0 so that equilibrium data is written correctly
+      !    field0_vec = field_vec
+      !    field_vec = 0.
+      !    nre_field(0) = nre_field(1)
+      !    nre_field(1) = 0.
+      !  endif
+        !call init_perturbations
+        !call nre_eq
+      !  if(eqsubtract.eq.0) then
+      !    call add_field_to_field(nre_field(1),nre_field(0))
+      !    nre_field(0) = 0.
+      ! endif
 
       ! For RMP and error fields
       if(irmp.ge.1 .or. iread_ext_field.ge.1 .or. &

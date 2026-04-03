@@ -293,15 +293,15 @@ Program Reducedquintic
 
   ! output equilibrium time slice
   ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  if(ntime.eq.0 .or. (ntime.eq.ntime0 .and. eqsubtract.eq.1)) then
+  if(ntime.eq.0 .or. (ntime.eq.ntime0 .and. eqsubtract.eq.0)) then
 
-     if(eqsubtract.eq.1) then
+     !if(eqsubtract.eq.1) then
         if(myrank.eq.0 .and. iprint.ge.2) print *, "  transport coefficients"
         call find_lcfs()
         call define_transport_coefficients
         call derived_quantities(0)
         if(iwrite_aux_vars.eq.1) call calculate_auxiliary_fields(0)
-     end if
+     !end if
 
      call hdf5_write_time_slice(1,ier)
   end if
@@ -726,11 +726,25 @@ else
 endif
         psi_temp = psi_field(0)
         call add_field_to_field(psi_temp, psi_field(1))
+        ! psi_temp = nre_field(0)
+        ! call add_field_to_field(psi_temp, nre_field(1))
+#ifdef USE3D
+        call m3dc1_field_sum_plane(psi_temp%vec%id)
+        call mult(psi_temp,1./nplanes)
+#endif
         call lcfs(psi_temp)
         call destroy_field(psi_temp)
      endif
   else
-     call lcfs(psi_field(1))
+     call create_field(psi_temp)
+     psi_temp = psi_field(1)
+#ifdef USE3D
+     call m3dc1_field_sum_plane(psi_temp%vec%id)
+     call mult(psi_temp,1./nplanes)
+#endif
+     call lcfs(psi_temp)
+     ! call lcfs(psi_field(1))
+     call destroy_field(psi_temp)
   endif
 end subroutine find_lcfs
 

@@ -706,8 +706,11 @@ subroutine nre_eq
      !rr=sqrt((x_79-10.5)**2+z_79**2)
      !nre079(:,OP_1) = nre079(:,OP_1)*exp(-rr**2/0.04)
      !nre079(:,OP_1) = 0.
+     nre079(:,OP_1) = exp(1.5*pst79(:,OP_GS))/bzt79(:,OP_1)/bi79(:,OP_1)*8.1e-3
+     !nre079(:,OP_1) = (pst79(:,OP_GS))/bzt79(:,OP_1)/bi79(:,OP_1)*0.1
 
-     if(irunaway == 2) nre079(:,OP_1) = 0.
+
+     !if(irunaway == 2) nre079(:,OP_1) = 0.
 
      dofs = intx2(mu79(:,:,OP_1),nre079(:,OP_1))
      call vector_insert_block(nre_vec%vec,itri,1,dofs,VEC_ADD)

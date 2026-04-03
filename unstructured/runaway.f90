@@ -100,11 +100,11 @@ contains
     nretmp = 0.
     Dens1 = Dens 
     
-    if(mr.ne.0) then 
-      re_79 = 0.D0
-      re_j79 = 0.D0 
-      return
-    endif
+    !if(mr.ne.0) then 
+    !  re_79 = 0.D0
+    !  re_j79 = 0.D0 
+    !  return
+    !endif
              
 !   based on formula in Stahl, et al, PRL 114 115002 (2015)
     teval = max(1.,Temp)   ! note: this sets a minimum temperature of 1 eV for runaway production
@@ -112,7 +112,7 @@ contains
 !   thus their growth is linked to -epar (due to the negative charge)
     esign = sign(1., -epar)
        jpar = nre!*ec*cre*va
-       nra = nre/ec/cre/va 
+       nra = nre/ec/c 
        re_epar = epar! - 1.0*abs(eta*jpar/b1/bz/ri)
        if (Temp.ge.teval .and. mr.eq.0) then
           Clog = 14.78D0-0.5*log(Dens1/1.d20)+log(Temp/1.d3)
@@ -121,22 +121,30 @@ contains
           nu = Dens1*ec**4*Clog/(4*pi*eps0**2*me**2*vth**3)
           tau = me*c/ec/Ecrit
           a = sqrt((1/ri-xmag)**2+(z-zmag)**2)
-          r = sqrt(1/ri**2+z**2)
+          if (a>0.15) re_epar=0.
+          r = 1/ri
           gamma = 1/(1+1.46*sqrt(a/r)+1.72*a/r) 
+          gamma = 1.
           x = (abs(re_epar)*ec*Temp)/(Ecrit*me*c**2)
           Ed = abs(re_epar)/Ecrit
+          !if (Ed.ne.0) write(0,*) Ed
           if(Ed < 1) Ed = 1
           if(abs(re_epar).gt.Ecrit) then
-              sd = Dens1*nu*x**(-3.D0*(1.D0+Zeff)/1.6D1) &
-                 *exp(-1.D0/(4*x)-sqrt((1.D0+Zeff)/x))
+              sd = Dens1*nu*(x)**(-3.D0*(1.D0+Zeff)/1.6D1) &
+                 *exp(-1.D0/(4*(x))-sqrt((1.D0+Zeff)/(x)))
+              sd = 0.
               ! avalanche growth only when epar and nre have opposite sign
               if (re_epar*nre<0) then
                  sa = nra/tau/Clog*sqrt(pi*gamma/3/(Zeff+5))*(Ed-1)* &
-                    1/sqrt(1-1/Ed+4*pi*(Zeff+1)**2/3/gamma/(Zeff+5)/(Ed**2+4/gamma**2-1)) 
+                    !1/sqrt(1-1/Ed+4*pi*(Zeff+1)**2/3/gamma/(Zeff+5)/(Ed**2+4/gamma**2-1))*4
+                    ! 1/sqrt(1-1/Ed+4*pi*(Zeff+1)**2/3/gamma/(Zeff+5)/(Ed**2+4/gamma**2-1))*2
+                    1*2
+                    !1/sqrt(1-1/Ed+4*pi*(Zeff+1)**2/3/gamma/(Zeff+5)/(Ed**2+4/gamma**2-1))*5.5
+                 !sa = 0.
               else
                  sa = 0.
               endif
-              dndt = (sd*esign + sa)*cre*ec*va
+              dndt = (sd*esign + sa)*c*ec
                  nrel = nre + dndt*dt_si
           else
               nrel = nre 
@@ -150,9 +158,10 @@ contains
        re_79 = nrel
        re_j79 = nre
   
-       if (abs(re_j79) .ge. abs(ri*bz)) then
-            dndt = 0.
-       endif
+       !if (abs(re_j79) .ge. abs(ri*bz)) then
+       !     dndt = 0.
+       !endif
+       !write(0,*) dndt
 
   end subroutine runaway_current
 
@@ -205,6 +214,9 @@ contains
     re_j79 = re_j79*(c*1e-3)/j0_norm
    
     re_j79 = re_j79+dndt*dt
+    !where (1./ri_79<0.87)
+    !  re_j79=0.
+    !end where
 
     re_epar = re_epar/(e0_norm*c*1e-4)
 

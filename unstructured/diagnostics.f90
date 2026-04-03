@@ -722,6 +722,8 @@ subroutine calculate_scalars()
   use pellet
   use kprad_m3dc1
   use bootstrap
+  use resistive_wall
+
 
   implicit none
  
@@ -839,7 +841,18 @@ subroutine calculate_scalars()
 #endif
 
      if(imulti_region.eq.1 .and. izone.eq.ZONE_CONDUCTOR) then
-        wallcur = wallcur - int2(ri2_79,pst79(:,OP_GS))/tpirzero
+        !wallcur = wallcur - int2(ri2_79,pst79(:,OP_GS))/tpirzero
+        temp79a = pst79(:,OP_GS)
+        do i=1, npoints
+           !if (eta79(i,OP_1)>0.5*eta_wall) temp79a(i)=0.
+           !if ((phi_79(i)<3.14).or.(phi_79(i)>3.14+0.5)) temp79a(i)=0.
+           if (sqrt((x_79(i)-rzero_rekc-0.275*cos(theta_rekc-phi_79(i)))**2+&
+             (z_79(i)-zzero_rekc-0.275*sin(theta_rekc-phi_79(i)))**2)>w_cd*3) temp79a(i)=0.
+
+        enddo
+        wallcur = wallcur - int2(ri2_79,temp79a)/tpirzero
+
+
 
         call jxb_r(temp79a, temp79d)
         call jxb_phi(temp79b)

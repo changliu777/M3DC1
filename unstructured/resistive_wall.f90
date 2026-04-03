@@ -97,16 +97,29 @@ contains
 #endif
     end do
 
-    if(eta_rekc.gt.0) then
+     if(eta_rekc.gt.0) then
        theta = atan2(z-zzero_rekc, x-rzero_rekc)
       f = 0
 #ifdef USE3D
        f = ntor_rekc*(phi-phi_rekc)*twopi/toroidal_period
 #endif
        if(isym_rekc .eq. 0) then
-          f = cos(f - mpol_rekc*(theta-theta_rekc))
-          f = exp((f-1.)/sigma_rekc**2)
-          wall_resistivity = 10.**(log10(wall_resistivity)*(1.-f) + log10(eta_rekc)*f)
+          !f1 = cos(f - mpol_rekc*(theta-theta_rekc))
+          !f1 = (tanh((f1-0.8)/sigma_rekc**2)+1)/2
+          !f1 = exp((f1-1.)/(sigma_rekc*10)**2)
+          !!f2 = cos(f - mpol_rekc*(theta-theta_rekc-2.09439))
+          !!f2 = exp((f2-1.)/sigma_rekc**2)
+          !!f3 = cos(f - mpol_rekc*(theta-theta_rekc-2.09439*2))
+          !!f3 = exp((f3-1.)/sigma_rekc**2)
+          !wall_resistivity = 10.**(log10(eta_wall)*(1.-f1) + log10(eta_wall*0.1)*f1)
+          f1 = cos(f + mpol_rekc*(theta-theta_rekc))
+          !f1 = exp((f1-1.)/sigma_rekc**2)
+          !f1 = (tanh((f1-0.98)/sigma_rekc**2)+1)/2
+          f1 = (tanh((f1-0.9925)/sigma_rekc**2)+1)/2
+          !if (sqrt((z-zzero_rekc)**2+(x-rzero_rekc)**2)>0.31) f1=0.
+          if (sqrt((z-zzero_rekc)**2+(x-rzero_rekc)**2)>0.29) f1=0.
+          !if (sqrt((z-zzero_rekc)**2+(x-rzero_rekc)**2)>0.27) f1=0.
+          wall_resistivity = 10.**(log10(wall_resistivity)*(1.-f1) + log10(eta_rekc)*f1)
        else
           f1 = cos(f - mpol_rekc*(theta-theta_rekc))
           f1 = exp((f1-1.)/sigma_rekc**2)
@@ -115,6 +128,7 @@ contains
           wall_resistivity = 10.**(log10(wall_resistivity)*(1.-max(f1,f2)) + log10(eta_rekc)*max(f1,f2))
       endif
     end if
+
 
   end function wall_resistivity
 

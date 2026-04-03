@@ -1037,14 +1037,14 @@ call PetscLogStagePop(jer)
         ! solve linear system...LU decomposition done first time
         if(myrank.eq.0 .and. itimer.eq.1) call second(tstart)
 
-        if(isolve_with_guess==1) then
-           call create_vector(xVec_guess, vecsize_n)
-           xVec_guess = nreold_vec ! Set the value from the previous step as the initial guess.
-           call newsolve_with_guess(s15_mat, temp, xVec_guess, jer)
-           call destroy_vector(xVec_guess)
-        else
+        ! if(isolve_with_guess==1) then
+        !    call create_vector(xVec_guess, vecsize_n)
+        !    xVec_guess = nreold_vec ! Set the value from the previous step as the initial guess.
+        !    call newsolve_with_guess(s15_mat, temp, xVec_guess, jer)
+        !    call destroy_vector(xVec_guess)
+        ! else
            call newsolve(s15_mat, temp, jer)
-        endif    
+        ! endif    
 
         if(myrank.eq.0 .and. itimer.eq.1) then
            call second(tend)

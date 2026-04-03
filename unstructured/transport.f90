@@ -988,7 +988,7 @@ function resistivity_func(izone_index)
   vectype, dimension(dofs_per_element) :: resistivity_func
   integer, intent(in) :: izone_index
   real :: tmin
-  integer :: nvals, j, mr, iz
+  integer :: nvals, j, mr
   real, allocatable :: xvals(:), yvals(:)
   real :: val, valp, valpp, pso, psib
   integer :: izone
@@ -1095,7 +1095,7 @@ function resistivity_func(izone_index)
 
      end select
   else if(izone.eq.ZONE_CONDUCTOR) then
-     izarr = iz
+     izarr = izone_index
      temp79a = wall_resistivity(x_79,phi_79,z_79,izarr) - etar*eta_fac
   else if(izone.eq.ZONE_VACUUM) then
      temp79a = eta_vac - etar*eta_fac

@@ -6,6 +6,7 @@ module m3dc1_output
   integer :: iwrite_transport_coeffs
   integer :: iwrite_aux_vars
   integer :: iwrite_adjacency
+  integer :: iwrite_quad_points
 
 contains
 
@@ -793,6 +794,8 @@ subroutine output_mesh(time_group_id, nelms, error)
   use mesh_mod
   use basic
   use boundary_conditions
+  use nintegrate
+  use m3dc1_nint
 
   implicit none
 
@@ -811,6 +814,7 @@ subroutine output_mesh(time_group_id, nelms, error)
 #endif
   real, dimension(vals_per_elm,nelms) :: elm_data
   integer, dimension(nodes_per_element) :: nodeids
+  real, dimension(int_pts_main*int_pts_tor,nelms) :: pts_r, pts_phi, pts_z
   real :: alx, alz
 
   integer :: is_edge(3)
@@ -869,6 +873,16 @@ subroutine output_mesh(time_group_id, nelms, error)
      elm_data( 9,i) = d%d
      elm_data(10,i) = d%Phi
 #endif
+
+     if(iwrite_quad_points.eq.1) then
+        call define_element_quadrature(i,int_pts_main,int_pts_tor)
+        if(npoints.ne.int_pts_main*int_pts_tor) then
+           print *, 'WARNING: INCONSISTENT NPOINTS IN QUADRATURE'
+        end if
+        pts_r(1:npoints,i) = x_79(1:npoints)
+        pts_z(1:npoints,i) = z_79(1:npoints)
+        pts_phi(1:npoints,i) = phi_79(1:npoints)
+     end if
   end do
   call output_field(mesh_group_id, "elements", elm_data, vals_per_elm, &
        nelms, error)
@@ -882,6 +896,19 @@ subroutine output_mesh(time_group_id, nelms, error)
      call output_field_int(mesh_group_id, "adjacency", adjacent, max_adj, &
           nelms, error)
      call clear_adjacency_matrix()
+  end if
+
+  if(iwrite_quad_points.eq.1) then
+     if(iprint.ge.1 .and. myrank.eq.0) then
+        print *, 'Writing quadrature points'
+     end if
+
+     call output_field(mesh_group_id, "quad_r", pts_r, &
+          int_pts_main*int_pts_tor, nelms, error)
+     call output_field(mesh_group_id, "quad_phi", pts_phi, &
+          int_pts_main*int_pts_tor, nelms, error)
+     call output_field(mesh_group_id, "quad_z", pts_z, &
+          int_pts_main*int_pts_tor, nelms, error)
   end if
 
 #ifdef USE3D

@@ -1065,6 +1065,8 @@ subroutine set_defaults
        "1: Output auxiliary variable fields", output_grp)
   call add_var_int("iwrite_adjacency", iwrite_adjacency, 1, &
        "1: Output mesh adjacency info", output_grp)
+  call add_var_int("iwrite_quad_points", iwrite_quad_points, 0, &
+       "1: Output integration quadrature points", output_grp)
   call add_var_int("itemp_plot", itemp_plot, 0, &
        "1: Output additional temperature plots", output_grp)
   call add_var_int("ibdgp", ibdgp, 0, &

@@ -450,7 +450,7 @@ subroutine init_particles(lrestart, ierr)
    call get_field_coefs(1)
    !call MPI_Win_fence(0, win_elfieldcoefs)
 
-   npar=nelms_global*npoints*1.1/nrows
+   npar=nelms_global*npoints*2.1/nrows
 
    !Allocate local storage for particle data
    disp_unit = 1
@@ -571,6 +571,12 @@ subroutine init_particles(lrestart, ierr)
                if (gid_max<locparts2) gid_max=locparts2
                locparts = locparts + 1
                pdata(locparts2) = dpar
+            else
+               locparts2 = (itri-1)*npoints+ipar
+               dpar%gid = locparts2
+               locparts2 = locparts2-(ielm_min-1)*npoints
+               dpar%deleted = .true.
+               pdata(locparts2) = dpar
             endif
          end do !iz
       end do
@@ -585,13 +591,16 @@ subroutine init_particles(lrestart, ierr)
       call mpi_allreduce(gid_min, ipart_begin, 1, MPI_INTEGER, MPI_MIN, hostcomm, ierr)
       call mpi_allreduce(gid_max, ipart_end, 1, MPI_INTEGER, MPI_MAX, hostcomm, ierr)
       call mpi_barrier(mpi_comm_world, ierr)
+      particle_map(:,:)=1
       if (hostrank == 0) then
          write(0,*) ipart_begin, ipart_end
          do  ipart = ipart_begin, ipart_end
-            itri=int((pdata(ipart)%gid-1)/npoints)+1
-            ipar=mod((pdata(ipart)%gid-1),npoints)+1
-            ! write(0,*) ipar,itri,ipart
-            particle_map(ipar,itri)=ipart
+            if (.not.pdata(ipart)%deleted) then
+               itri=int((pdata(ipart)%gid-1)/npoints)+1
+               ipar=mod((pdata(ipart)%gid-1),npoints)+1
+               ! write(0,*) ipar,itri,ipart
+               particle_map(ipar,itri)=ipart
+            endif
          end do
       end if
       call mpi_barrier(mpi_comm_world, ierr)
@@ -611,7 +620,7 @@ subroutine init_particles(lrestart, ierr)
 #endif
 
    call create_field(nre_vec)
-   call set_matrix_index(diff2_mat, 75)
+   call set_matrix_index(diff2_mat, 175)
    call create_mat(diff2_mat, 1, 1, icomplex, 1)
    !call create_newvar_matrix(diff_mat, NV_NOBOUND, NV_I_MATRIX, 1)
    do itri=1,nelms

@@ -22,6 +22,7 @@ subroutine electric_field_R(ilin,o,izone)
   
   ! eta J
   ! ~~~~~
+  if (.not.((kinetic.eq.1).or.((irunaway.ge.1).and.(ra_characteristics.eq.1)))) then
   if(ilin.eq.1) then
      o = o - temp79b*bz179(:,OP_DZ)*ri_79
 #if defined(USE3D) || defined(USECOMPLEX)
@@ -35,6 +36,7 @@ subroutine electric_field_R(ilin,o,izone)
           (ri2_79*pst79(:,OP_DRP) - ri_79*bfpt79(:,OP_DZP))
 #endif
   end if
+  endif
   if(izone.eq.ZONE_CONDUCTOR) return
 
   ! -VxB
@@ -150,6 +152,7 @@ subroutine electric_field_Z(ilin,o,izone)
   
   ! eta J
   ! ~~~~~
+  if (.not.((kinetic.eq.1).or.((irunaway.ge.1).and.(ra_characteristics.eq.1)))) then
   if(ilin.eq.1) then 
      o = o + temp79b*bz179(:,OP_DR)*ri_79
 #if defined(USE3D) || defined(USECOMPLEX)
@@ -163,6 +166,7 @@ subroutine electric_field_Z(ilin,o,izone)
           (ri2_79*pst79(:,OP_DZP) + ri_79*bfpt79(:,OP_DRP))
 #endif
   end if
+  endif
   if(izone.eq.ZONE_CONDUCTOR) return
 
   ! -VxB
@@ -273,11 +277,13 @@ subroutine electric_field_phi(ilin,o, izone)
 
   ! eta J
   ! ~~~~~
+  if (.not.((kinetic.eq.1).or.((irunaway.ge.1).and.(ra_characteristics.eq.1)))) then
   if(ilin.eq.1) then
      o = o - ri_79*eta79(:,OP_1)*ps179(:,OP_GS)
   else
      o = o - ri_79*eta79(:,OP_1)*pst79(:,OP_GS)
   end if
+  endif
   if(izone.eq.ZONE_CONDUCTOR) return
 
   ! VxB

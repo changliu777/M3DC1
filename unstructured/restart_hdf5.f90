@@ -136,6 +136,8 @@ contains
        ikprad_in = 0
     end if
 
+    if ((irunaway.gt.0).or.(kinetic.eq.1)) call read_real_attr(root_id, "bzsign", bzsign, error)
+
     ! Read Scalars
     call h5gopen_f(root_id, "scalars", scalar_group_id, error)
 

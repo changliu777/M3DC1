@@ -671,9 +671,10 @@ subroutine init_particles(lrestart, ierr)
          call define_fields(ielm, FIELD_PSI+FIELD_I, 1, 0)
          call eval_ops(ielm, psi_field(0), ps079)
          call eval_ops(ielm, bz_field(0), bz079)
-         bzsign_temp=sum(ps079(:,OP_GS))*sum(bz079(:,OP_1))
+         bzsign_temp=sign(1.0, real(sum(ps079(:,OP_GS))*sum(bz079(:,OP_1))))
       endif
       call mpi_allreduce(bzsign_temp, bzsign, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr)
+      bzsign=sign(1.0, bzsign)
       if (bzsign>0) then
          allocate(f_array2(num_energy,num_pitch,num_r))
          do pitch_i=1,num_pitch
@@ -1304,7 +1305,7 @@ subroutine rk4(part, dt, last_step, ierr)
             if (vspdims .eq. 2) then
                lr = lr/sqrt(dot_product(lr, lr))*sqrt(2.0*qm_ion(part%sps)*part%v(2)/B0inv)/qm_ion(part%sps)*B0inv
             else
-               lr = lr/sqrt(dot_product(lr, lr))*sqrt(2.0*qm_ion(part%sps)*part%v(5)/B0inv)/qm_ion(part%sps)*B0inv
+               !lr = lr/sqrt(dot_product(lr, lr))*sqrt(2.0*qm_ion(part%sps)*part%v(5)/B0inv)/qm_ion(part%sps)*B0inv
             end if
             lr(2) = lr(2)/x2(1)
             x2 = x2 + lr
@@ -1780,14 +1781,14 @@ subroutine fdot(x, v, w, dxdt, dvdt, dwdt, dEpdt, itri, kel, f00, ierr, sps, B00
    !dEdt = 0. ! fluid particle
    !dxidt = 0. ! fluid particle
 
-   ! vD = (1/(e B**3))(M_i U**2 + mu B)(B x grad B) + ((M_i U**2)/(eB**2))*J_perp
-   tmp1 = (v(1)*v(1))*(B0inv*B0inv)/qm_ion(sps)
-   tmp2 = tmp1*B0inv + v(2)*(B0inv*B0inv)
-   weqvD = tmp2*BxgrdB + tmp1*(Jcyl - dot_product(bhat, Jcyl)*bhat)
-   weqv0 = v(1)*bhat + weqvD
-   tmp2 = (v(4)*v(4))*(B0inv*B0inv)/qm_ion(sps)*B0inv
-   tmp2 = tmp1*B0inv
-   weqvD1 = tmp2*BxgrdB + tmp1*(Jcyl - dot_product(bhat, Jcyl)*bhat)
+   !! vD = (1/(e B**3))(M_i U**2 + mu B)(B x grad B) + ((M_i U**2)/(eB**2))*J_perp
+   !tmp1 = (v(1)*v(1))*(B0inv*B0inv)/qm_ion(sps)
+   !tmp2 = tmp1*B0inv + v(2)*(B0inv*B0inv)
+   !weqvD = tmp2*BxgrdB + tmp1*(Jcyl - dot_product(bhat, Jcyl)*bhat)
+   !weqv0 = v(1)*bhat + weqvD
+   !tmp2 = (v(4)*v(4))*(B0inv*B0inv)/qm_ion(sps)*B0inv
+   !tmp2 = tmp1*B0inv
+   !weqvD1 = tmp2*BxgrdB + tmp1*(Jcyl - dot_product(bhat, Jcyl)*bhat)
 
    !ne0 = dot_product(geomterms%g, elfieldcoefs(itri)%ne0)
 
@@ -3372,16 +3373,16 @@ subroutine particle_pressure_rhs
             vpar = pdata(ipart)%v(1)
             pperp = q_ion(pdata(ipart)%sps)*pdata(ipart)%v(2)*B0
          else !full orbit: v_|| = v.B/|B|,  v_perp = v - v_||
-            if (B0 .gt. 0.0) then !non-degenerate
-               !vpar = dot_product(pdata(ipart)%v, B_part(1:vspdims))/B0
-               vpar = pdata(ipart)%v(4)
-               !vperp = pdata(ipart)%v - (vpar/B0)*B_part(1:vspdims)
-               pperp = q_ion(pdata(ipart)%sps)*pdata(ipart)%v(5)*B0
-            else !degenerate case: no B field, pressure is scalar
-               !vpar = 0.0
-               !vperp = pdata(ipart)%v
-            end if !degenerate?
-            !pperp = 0.5 * m_ion * dot_product(vperp, vperp)
+            !if (B0 .gt. 0.0) then !non-degenerate
+            !   !vpar = dot_product(pdata(ipart)%v, B_part(1:vspdims))/B0
+            !   vpar = pdata(ipart)%v(4)
+            !   !vperp = pdata(ipart)%v - (vpar/B0)*B_part(1:vspdims)
+            !   pperp = q_ion(pdata(ipart)%sps)*pdata(ipart)%v(5)*B0
+            !else !degenerate case: no B field, pressure is scalar
+            !   !vpar = 0.0
+            !   !vperp = pdata(ipart)%v
+            !end if !degenerate?
+            !!pperp = 0.5 * m_ion * dot_product(vperp, vperp)
          end if !full-orbit?
          ppar = m_ion(pdata(ipart)%sps)*vpar**2
          if (particle_linear == 1) then
@@ -3770,8 +3771,8 @@ subroutine hdf5_write_particles(ierr)
          values(7, ipart) = pdata(pindex)%v(1)
          values(8, ipart) = pdata(pindex)%v(2)
          if (vspdims == 5) then
-            values(9, ipart) = pdata(pindex)%v(3)
-            values(10, ipart) = pdata(pindex)%v(4)
+            !values(9, ipart) = pdata(pindex)%v(3)
+            !values(10, ipart) = pdata(pindex)%v(4)
          end if
          ! values(pdims, ipart) = pdata(pindex)%v(vspdims)
          values(9, ipart) = pdata(pindex)%f0
@@ -3987,8 +3988,8 @@ subroutine hdf5_read_particles(filename, ierr)
                      !if (mod(dpar%gid,2)==1) dpar%v(1) = -valbuf(7,ipart)
                      dpar%v(2) = valbuf(8, ipart)
                      if (vspdims == 5) then
-                        dpar%v(3) = valbuf(9, ipart)
-                        dpar%v(4) = valbuf(10, ipart)
+                        !dpar%v(3) = valbuf(9, ipart)
+                        !dpar%v(4) = valbuf(10, ipart)
                      end if
                      ! dpar%v(vspdims) = valbuf(ldim, ipart)
                      dpar%f0 = valbuf(9, ipart)

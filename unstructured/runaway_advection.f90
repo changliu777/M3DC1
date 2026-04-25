@@ -503,9 +503,10 @@ subroutine init_particles(lrestart, ierr)
          call define_fields(ielm, FIELD_PSI+FIELD_I, 1, 0)
          call eval_ops(ielm, psi_field(0), ps079)
          call eval_ops(ielm, bz_field(0), bz079)
-         bzsign_temp=sum(ps079(:,OP_GS))*sum(bz079(:,OP_1))
+         bzsign_temp=sign(1.0, real(sum(ps079(:,OP_GS))*sum(bz079(:,OP_1))))
       endif
       call mpi_allreduce(bzsign_temp, bzsign, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr)
+      bzsign=sign(1.0, bzsign)
    endif
 
    ! if (lrestart) then

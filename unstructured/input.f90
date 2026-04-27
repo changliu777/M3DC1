@@ -1300,7 +1300,7 @@ subroutine set_defaults
        "1: Synchronize particle parallel flow to MHD", particle_grp)
   call add_var_double("kinetic_rhomax", kinetic_rhomax, 1., &
        "Maximum rho for kinetic particle", particle_grp)
-  call add_var_double("vpar_reduce", vpar_reduce, 0.5, &
+  call add_var_double("vpar_reduce", vpar_reduce, -1.0, &
        "Factor of parallel flow reduction for every timestep", particle_grp)
   call add_var_int("idiamagnetic_advection", idiamagnetic_advection, 0, &
        "1: Enable diamagnetic velocity advection term in momentum equation", particle_grp)
@@ -1761,13 +1761,23 @@ subroutine validate_input
 
   if(eqsubtract.eq.0) ifullf=1
 
-  if(ifullf.eq.1) particle_linear=0
+  ! if(ifullf.eq.1) particle_linear=0
 
   if(fast_ion_mass.eq.0) fast_ion_mass=ion_mass
 
   if(fast_ion_z.eq.0) fast_ion_z=z_ion
 
   if(kinetic_thermal_ion.eq.0) particle_subcycles=1
+
+  if(vpar_reduce.eq.-1.0) then
+    if ((kinetic.eq.1).and.(kinetic_thermal_ion.eq.1)) then
+      vpar_reduce = 0.5
+    else
+      vpar_reduce = 0.0
+    endif
+  endif
+  if(kinetic_thermal_ion.eq.0) particle_subcycles=1
+
 #endif
 
   if(itemp.eq.0 .and. kappai_fac.ne.1.) then

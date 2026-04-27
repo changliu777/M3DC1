@@ -601,6 +601,8 @@ module arrays
   type(field_type) :: v_i_par
   type(field_type) :: v_f_par
   type(field_type) :: ustar_field, vzstar_field, chistar_field
+  type(field_type) :: p_i_par2, p_i_perp2
+  type(field_type) :: den_i_02, den_i_12
 #endif
 
   ! the following pointers point to the locations of the named field within

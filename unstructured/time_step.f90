@@ -306,10 +306,10 @@ subroutine scaleback
 
   ! vectype, parameter :: scalefac = 1.e-10
   ! vectype, parameter :: scalefac = 50.
-  vectype, parameter :: scalefac = 10000.
+  vectype, parameter :: scalefac = 10.
 
   ! if(ekin.lt.max_ke .or. max_ke.eq.0) return
-  if(ntime.ne.351) return
+  if(ntime.ne.551) return
   ! if(ntime.ne.1) return
   ! if(ntime.ne.301) return
   if(myrank.eq.0) write(*,*) " =>solution scaled back at time", time

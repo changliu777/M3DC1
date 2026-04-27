@@ -1482,6 +1482,10 @@ endif
      call create_field(ustar_field)
      call create_field(vzstar_field)
      call create_field(chistar_field)
+     call create_field(p_i_par2)
+     call create_field(p_i_perp2)
+     call create_field(den_i_02)
+     call create_field(den_i_12)
 #endif
 
      call create_auxiliary_fields

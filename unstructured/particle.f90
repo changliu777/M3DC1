@@ -11,7 +11,7 @@ module particles
    private
 #ifdef USEPARTICLES
    public :: particle_test, particle_step, particle_scaleback, finalize_particles, hdf5_read_particles, hdf5_write_particles
-   public :: set_parallel_velocity, set_s1_0_mat, filter_velocity
+   public :: set_parallel_velocity, filter_fields
 #endif
 
    real, parameter :: e_mks = 1.6022e-19      !Elementary charge, in Coulombs
@@ -340,7 +340,6 @@ subroutine particle_test
    call update_particle_pressure
 
    if (kinetic_thermal_ion.eq.1) then
-      call set_s1_0_mat
       if (idiamagnetic_advection.eq.1) call set_diamagnetic_velocity
       call set_den_smooth
    endif
@@ -2045,7 +2044,7 @@ subroutine particle_step(pdt)
    if (kinetic_thermal_ion.eq.1) then
       call set_parallel_velocity
    endif
-   call filter_velocity
+   call filter_fields
    call calculate_electric_fields(linear)
    do isubcycle=1,particle_subcycles
       if (kinetic_thermal_ion.eq.1) then
@@ -4105,6 +4104,7 @@ subroutine set_s1_0_mat
    logical, save :: first_time = .true.
     
 
+   if (.not.first_time) return
     !call matvecmult(d1_0_mat, vel_vec, b1_vel)
     call create_vector(vel_vec,      numvar)
     call associate_field(u_v,    vel_vec,      1)
@@ -4170,6 +4170,7 @@ subroutine set_s1_0_mat
 
        call boundary_vel(b1_vel, u_v, vz_v, chi_v, s1_0_mat)
        call finalize(s1_0_mat)
+       first_time = .false.
  
 end subroutine set_s1_0_mat
 
@@ -4218,6 +4219,8 @@ subroutine set_parallel_velocity
     vz_v = vz_field(1)
     chi_v = chi_field(1)
    call create_vector(b1_vel, numvar)
+
+   call set_s1_0_mat
      
    u_i = 1
    vz_i = 2
@@ -4431,6 +4434,8 @@ subroutine set_diamagnetic_velocity
     vz_v = vz_field(1)
     chi_v = chi_field(1)
    call create_vector(b1_vel, numvar)
+
+   call set_s1_0_mat
      
    u_i = 1
    vz_i = 2
@@ -4560,7 +4565,7 @@ subroutine get_axi(f)
 
 end subroutine get_axi
 
-subroutine filter_velocity
+subroutine filter_field(f)
 
    use mesh_mod
    use basic
@@ -4579,6 +4584,7 @@ subroutine filter_velocity
 
    implicit none
 
+   type(field_type), intent(inout) :: f
    vectype, dimension(dofs_per_element) :: r4
    integer :: k, itri, izone
    integer :: ieq(3)
@@ -4586,84 +4592,59 @@ subroutine filter_velocity
    integer, dimension(dofs_per_element) :: imask
    type(vector_type), pointer :: vsource
    type(field_type) ::   phi_v, bz_v, psi_v
+   type(field_type) ::   f_temp
+   type(field_type) ::   u_field_temp, vz_field_temp, psi_field_temp, bz_field_temp
    vectype, dimension(dofs_per_element) :: dofs
    integer :: ierr
    type(field_type) ::   u_v
    type(field_type) ::  vz_v
    type(field_type) :: chi_v
+   type(field_type) :: f_v
    type(vector_type) :: vel_vec
    type(vector_type) :: b1_vel
    vectype, dimension(dofs_per_element, dofs_per_element) :: tempxx
    type(matrix_type) :: diff_tor_mat
-   type(field_type) ::  pscos_v, pssin_v, pzcos_v, pzsin_v, phcos_v, phsin_v, bzcos_v, bzsin_v
-  vectype, dimension(MAX_PTS, OP_NUM) :: pscos79, pssin79, pzcos79, pzsin79, phcos79, phsin79, bzcos79, bzsin79
+   type(field_type) ::  cos_v, sin_v, pscos_v, pssin_v, pzcos_v, pzsin_v, phcos_v, phsin_v, vzcos_v, vzsin_v, bzcos_v, bzsin_v
+   vectype, dimension(MAX_PTS, OP_NUM) :: f79, cos79, sin79
+  vectype, dimension(MAX_PTS, OP_NUM) :: pscos79, pssin79, pzcos79, pzsin79, phcos79, phsin79, vzcos79, vzsin79, bzcos79, bzsin79
 
    logical, save :: first_time = .true.
-    
+
+   call create_field(f_temp)
+   f_temp = 0.
+
+   call create_field(cos_v)
+   call create_field(sin_v)
+
+   call create_field(f_v)
 
    do i = 1, imode_filter
       ntor_i = mode_filter_ntor(i)
 
-      call create_field(phcos_v)
-      call create_field(phsin_v)
-      phcos_v = 0.
-      phsin_v = 0.
-
-      call create_field(bzcos_v)
-      call create_field(bzsin_v)
-      bzcos_v = 0.
-      bzsin_v = 0.
-
-      call create_field(pscos_v)
-      call create_field(pssin_v)
-      pscos_v = 0.
-      pssin_v = 0.
-
+      cos_v = 0.
+      sin_v = 0.
 
       do itri = 1, local_elements()
          call get_zone(itri, izone)
 
          call define_element_quadrature(itri, int_pts_main, int_pts_tor)
-         call define_fields(itri, FIELD_PHI + FIELD_I + FIELD_PSI , 1, 0)
+         call define_fields(itri, 0, 1, 0)
+         call eval_ops(itri, f, f79)
 
-         temp79a = ph179(:, OP_1) * cos(ntor_i * phi_79)
+         temp79a = f79(:, OP_1) * cos(ntor_i * phi_79)
          dofs = intx2(mu79(:, :, OP_1), temp79a)
-         call vector_insert_block(phcos_v%vec, itri, 1, dofs, VEC_ADD)
+         call vector_insert_block(cos_v%vec, itri, 1, dofs, VEC_ADD)
 
-         temp79a = ph179(:, OP_1) * sin(ntor_i * phi_79)
+         temp79a = f79(:, OP_1) * sin(ntor_i * phi_79)
          dofs = intx2(mu79(:, :, OP_1), temp79a)
-         call vector_insert_block(phsin_v%vec, itri, 1, dofs, VEC_ADD)
-
-         temp79a = bz179(:, OP_1) * cos(ntor_i * phi_79)
-         dofs = intx2(mu79(:, :, OP_1), temp79a)
-         call vector_insert_block(bzcos_v%vec, itri, 1, dofs, VEC_ADD)
-
-         temp79a = bz179(:, OP_1) * sin(ntor_i * phi_79)
-         dofs = intx2(mu79(:, :, OP_1), temp79a)
-         call vector_insert_block(bzsin_v%vec, itri, 1, dofs, VEC_ADD)
-
-         temp79a = ps179(:, OP_1) * cos(ntor_i * phi_79)
-         dofs = intx2(mu79(:, :, OP_1), temp79a)
-         call vector_insert_block(pscos_v%vec, itri, 1, dofs, VEC_ADD)
-
-         temp79a = ps179(:, OP_1) * sin(ntor_i * phi_79)
-         dofs = intx2(mu79(:, :, OP_1), temp79a)
-         call vector_insert_block(pssin_v%vec, itri, 1, dofs, VEC_ADD)
+         call vector_insert_block(sin_v%vec, itri, 1, dofs, VEC_ADD)
       end do
 
-      call newvar_solve(phcos_v%vec, mass_mat_lhs)
-      call newvar_solve(phsin_v%vec, mass_mat_lhs)
-      call newvar_solve(bzcos_v%vec, mass_mat_lhs)
-      call newvar_solve(bzsin_v%vec, mass_mat_lhs)
-      call newvar_solve(pscos_v%vec, mass_mat_lhs)
-      call newvar_solve(pssin_v%vec, mass_mat_lhs)
+      call newvar_solve(cos_v%vec, mass_mat_lhs)
+      call newvar_solve(sin_v%vec, mass_mat_lhs)
 
-      call get_axi(phcos_v)
-      call get_axi(phsin_v)
-      call get_axi(bzcos_v)
-      call get_axi(bzsin_v)
-      call get_axi(pscos_v)
-      call get_axi(pssin_v)
+      call get_axi(cos_v)
+      call get_axi(sin_v)
 
       ! ieq(1) = u_i
       ! ieq(2) = vz_i
@@ -4676,71 +4657,82 @@ subroutine filter_velocity
       ! end if
       ! vsource = 0.
 
-      call create_field(phi_v)
-      phi_v = 0.
-
-      call create_field(bz_v)
-      bz_v = 0.
-
-      call create_field(psi_v)
-      psi_v = 0.
+      f_v = 0.
 
       do itri = 1, local_elements()
          call get_zone(itri, izone)
 
          call define_element_quadrature(itri, int_pts_main, int_pts_tor)
-         call define_fields(itri, FIELD_PHI + FIELD_I + FIELD_PSI, 1, 0)
+         call define_fields(itri, 0, 1, 0)
 
-         call eval_ops(itri, phcos_v, phcos79)
-         call eval_ops(itri, phsin_v, phsin79)
-         call eval_ops(itri, bzcos_v, bzcos79)
-         call eval_ops(itri, bzsin_v, bzsin79)
-         call eval_ops(itri, pscos_v, pscos79)
-         call eval_ops(itri, pssin_v, pssin79)
+         call eval_ops(itri, cos_v, cos79)
+         call eval_ops(itri, sin_v, sin79)
 
-         ph179(:, OP_1) = ph179(:, OP_1)                                &
-            - phcos79(:, OP_1) * cos(ntor_i * phi_79)                   &
-            - phsin79(:, OP_1) * sin(ntor_i * phi_79)
-
-         bz179(:, OP_1) = bz179(:, OP_1)                                &
-            - bzcos79(:, OP_1) * cos(ntor_i * phi_79)                   &
-            - bzsin79(:, OP_1) * sin(ntor_i * phi_79)
-
-         ps179(:, OP_1) = ps179(:, OP_1)                                &
-            - pscos79(:, OP_1) * cos(ntor_i * phi_79)                   &
-            - pssin79(:, OP_1) * sin(ntor_i * phi_79)
-
-         dofs = intx2(mu79(:, :, OP_1), ph179(:, OP_1))
-         call vector_insert_block(phi_v%vec, itri, 1, dofs, VEC_ADD)
-
-         dofs = intx2(mu79(:, :, OP_1), bz179(:, OP_1))
-         call vector_insert_block(bz_v%vec, itri, 1, dofs, VEC_ADD)
-
-         dofs = intx2(mu79(:, :, OP_1), ps179(:, OP_1))
-         call vector_insert_block(psi_v%vec, itri, 1, dofs, VEC_ADD)
+         if (ntor_i.eq.0) then
+            temp79a = 0*ph179(:, OP_1)                                &
+               + cos79(:, OP_1) * cos(ntor_i * phi_79)                   &
+               + sin79(:, OP_1) * sin(ntor_i * phi_79)
+         else
+            temp79a = 0*ph179(:, OP_1)                                &
+               + cos79(:, OP_1) * 2*cos(ntor_i * phi_79)                   &
+               + sin79(:, OP_1) * 2*sin(ntor_i * phi_79)
+         endif
+       
+         dofs = intx2(mu79(:, :, OP_1), temp79a)
+         call vector_insert_block(f_v%vec, itri, 1, dofs, VEC_ADD)
       end do
 
-      call newvar_solve(phi_v%vec, mass_mat_lhs)
-      u_field(1) = phi_v
+      call newvar_solve(f_v%vec, mass_mat_lhs)
+      call add(f_temp, f_v)
 
-      call newvar_solve(bz_v%vec, mass_mat_lhs)
-      bz_field(1) = bz_v
+  end do
+  ! f = f_temp
+  ! call mult(f_temp,-1.)
+  call mult(f_temp,-0.1)
+  call add(f, f_temp)
 
-      call newvar_solve(psi_v%vec, mass_mat_lhs)
-      psi_field(1) = psi_v
+   ! call destroy_field(phcos_v)
+   ! call destroy_field(phsin_v)
+   ! call destroy_field(phi_v)
+   ! call destroy_field(bzcos_v)
+   ! call destroy_field(bzsin_v)
+   ! call destroy_field(bz_v)
+   ! call destroy_field(vzcos_v)
+   ! call destroy_field(vzsin_v)
+   ! call destroy_field(vz_v)
+   ! call destroy_field(pscos_v)
+   ! call destroy_field(pssin_v)
+   ! call destroy_field(psi_v)
+   ! call destroy_field(u_field_temp)
+   ! call destroy_field(vz_field_temp)
+   ! call destroy_field(psi_field_temp)
+   ! call destroy_field(bz_field_temp)
+   
+end subroutine filter_field
 
-      call destroy_field(phcos_v)
-      call destroy_field(phsin_v)
-      call destroy_field(phi_v)
-      call destroy_field(bzcos_v)
-      call destroy_field(bzsin_v)
-      call destroy_field(bz_v)
-      call destroy_field(pscos_v)
-      call destroy_field(pssin_v)
-      call destroy_field(psi_v)
-   end do
+subroutine filter_fields
 
-end subroutine filter_velocity
+   use basic
+   use arrays
+   use m3dc1_nint
+   use model
+
+   implicit none
+
+   logical, save :: first_time = .true.
+
+   call filter_field(u_field(1))
+   call filter_field(vz_field(1))
+   call filter_field(chi_field(1))
+   call filter_field(psi_field(1))
+   call filter_field(bz_field(1))
+   call filter_field(den_field(1))
+   call filter_field(p_field(1))
+   call filter_field(te_field(1))
+   call filter_field(nre_field(1))
+  
+end subroutine filter_fields
+
 
 subroutine set_density
 

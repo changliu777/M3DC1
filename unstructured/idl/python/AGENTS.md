@@ -131,6 +131,7 @@
   - `field_spectrum.py` and `read_field_spectrum.py` support `m_val`; `read_field_spectrum.py` also accepts `m_vals` as an alias.
   - `field_spectrum.py` supports x-axis selection via `psi_norm`, `phi_norm`, and `rho`.
   - `plot_field_spectrum.py` should use Matplotlib default `axes.prop_cycle` colors.
+  - `plot_field_spectrum.py` should keep the raw spectrum amplitude convention from `read_field_spectrum(...)`; do not add Schaffer-specific normalization by `fc.area` or `fc.dpsi_dchi`.
   - If `m_val` is not provided to `plot_field_spectrum.py`, choose the 5 `m` values with the largest maximum absolute amplitudes and plot those.
   - When auto-selecting `m` values in `plot_field_spectrum.py`, ignore `NaN` amplitudes and rank using finite amplitudes across both positive and negative `m`.
   - For each `q_target` in `plot_field_spectrum.py`, draw vertical resonance lines for all profile crossings, not just one interpolated crossing.
@@ -138,6 +139,13 @@
     - `flux_at_q.py`
     - `schaffer_plot.py`
     - `flux_coord_field.py`
+- `schaffer_plot.py` conventions:
+  - Public argument order is `schaffer_plot(field, timeslices=-1, x=None, z=None, ...)`.
+  - For string field input, `schaffer_plot.py` should use `read_field_spectrum(...)` so its read/default/`ntor` behavior stays aligned with `plot_field_spectrum.py`.
+  - `schaffer_plot.py` should accept `tpoints` and pass it through the spectrum-read path for `3d=1` toroidal sampling.
+  - `schaffer_plot.py` should use the same raw spectrum amplitude convention as `plot_field_spectrum.py`; do not divide by `fc.area` or `fc.dpsi_dchi`.
+  - In the 1D `m_val` branch, use Matplotlib default `axes.prop_cycle` colors and draw resonance lines for all `q` crossings, consistent with `plot_field_spectrum.py`.
+  - In the 2D contour branch, default to filled contours with `levels=100` and `lines=False`; expose `lines` to overlay contour lines when requested.
 - `read_scalar.py` / `plot_scalar.py` interface update:
   - Use public argument name `growth` instead of `growth_rate`.
   - Keep `growth_rate` only as a backward-compatible alias when needed.
@@ -191,7 +199,7 @@
   - For `equilibrium=True` with `eqsubtract=1`, force reads to slice `-1` to avoid recursive total-field reconstruction loops.
 - `lcfs.py` / `read_lcfs.py` slice behavior:
   - `lcfs.py` should accept an explicit `slice` argument and pass it directly to `read_lcfs(...)`.
-  - `read_lcfs.py` should respect negative slices in Python-style form, e.g. `slice=-1` means the last available slice.
+  - `read_lcfs.py` should treat any `slice < 0` as the equilibrium LCFS entry (scalar index `0`), matching `read_field(..., timeslices=-1)` equilibrium behavior.
   - `read_lcfs.py` should reproduce the IDL print behavior:
     - `slice time = ...`
     - `time step time: ...`

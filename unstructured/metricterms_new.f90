@@ -11013,7 +11013,7 @@ real function energy_mp(mask)
   end if
 
 
-  if(linear.eq.1) then
+  ! if(linear.eq.1) then
      temp = .5* &
           (int4(ri2_79,ps179(:,OP_DZ),CONJUGATE(ps179(:,OP_DZ)),temp79a) &
           +int4(ri2_79,ps179(:,OP_DR),CONJUGATE(ps179(:,OP_DR)),temp79a))
@@ -11028,37 +11028,37 @@ real function energy_mp(mask)
              -int4(ri_79,CONJUGATE(ps179(:,OP_DR)),bfp179(:,OP_DZ),temp79a))
      endif
 #endif
-  else
-!    nonlinear:  do not subtract off equilibrium piece
-     temp = .5* &
-          (int4(ri2_79,pst79(:,OP_DZ),pst79(:,OP_DZ),temp79a) &
-          +int4(ri2_79,pst79(:,OP_DR),pst79(:,OP_DR),temp79a)) ! &
-!          - .5* &
-!          (int4(ri2_79,ps079(:,OP_DZ),ps079(:,OP_DZ),temp79a) &
-!          +int4(ri2_79,ps079(:,OP_DR),ps079(:,OP_DR),temp79a))
-#if defined(USE3D)
-     if(numvar.gt.1) then
-        temp = temp   &
-             + .5* &
-             (int3(bfpt79(:,OP_DZ),bfpt79(:,OP_DZ),temp79a) &
-             +int3(bfpt79(:,OP_DR),bfpt79(:,OP_DR),temp79a) &
-             +2.*int4(ri_79,pst79(:,OP_DZ),bfpt79(:,OP_DR),temp79a) &
-             -2.*int4(ri_79,pst79(:,OP_DR),bfpt79(:,OP_DZ),temp79a) )
-     endif
-#endif
-
-#ifdef USECOMPLEX
-     if(numvar.gt.1) then
-        temp = temp + .5* &
-             (int3(bfpt79(:,OP_DZ),CONJUGATE(bfpt79(:,OP_DZ)),temp79a) &
-             +int3(bfpt79(:,OP_DR),CONJUGATE(bfpt79(:,OP_DR)),temp79a) &
-             +int4(ri_79,pst79(:,OP_DZ),CONJUGATE(bfpt79(:,OP_DR)),temp79a) &
-             -int4(ri_79,pst79(:,OP_DR),CONJUGATE(bfpt79(:,OP_DR)),temp79a) &
-             +int4(ri_79,CONJUGATE(pst79(:,OP_DZ)),bfpt79(:,OP_DR),temp79a) &
-             -int4(ri_79,CONJUGATE(pst79(:,OP_DR)),bfpt79(:,OP_DZ),temp79a))
-     endif
-#endif
-  endif
+!   else
+! !    nonlinear:  do not subtract off equilibrium piece
+!      temp = .5* &
+!           (int4(ri2_79,pst79(:,OP_DZ),pst79(:,OP_DZ),temp79a) &
+!           +int4(ri2_79,pst79(:,OP_DR),pst79(:,OP_DR),temp79a)) ! &
+! !          - .5* &
+! !          (int4(ri2_79,ps079(:,OP_DZ),ps079(:,OP_DZ),temp79a) &
+! !          +int4(ri2_79,ps079(:,OP_DR),ps079(:,OP_DR),temp79a))
+! #if defined(USE3D)
+!      if(numvar.gt.1) then
+!         temp = temp   &
+!              + .5* &
+!              (int3(bfpt79(:,OP_DZ),bfpt79(:,OP_DZ),temp79a) &
+!              +int3(bfpt79(:,OP_DR),bfpt79(:,OP_DR),temp79a) &
+!              +2.*int4(ri_79,pst79(:,OP_DZ),bfpt79(:,OP_DR),temp79a) &
+!              -2.*int4(ri_79,pst79(:,OP_DR),bfpt79(:,OP_DZ),temp79a) )
+!      endif
+! #endif
+!
+! #ifdef USECOMPLEX
+!      if(numvar.gt.1) then
+!         temp = temp + .5* &
+!              (int3(bfpt79(:,OP_DZ),CONJUGATE(bfpt79(:,OP_DZ)),temp79a) &
+!              +int3(bfpt79(:,OP_DR),CONJUGATE(bfpt79(:,OP_DR)),temp79a) &
+!              +int4(ri_79,pst79(:,OP_DZ),CONJUGATE(bfpt79(:,OP_DR)),temp79a) &
+!              -int4(ri_79,pst79(:,OP_DR),CONJUGATE(bfpt79(:,OP_DR)),temp79a) &
+!              +int4(ri_79,CONJUGATE(pst79(:,OP_DZ)),bfpt79(:,OP_DR),temp79a) &
+!              -int4(ri_79,CONJUGATE(pst79(:,OP_DR)),bfpt79(:,OP_DZ),temp79a))
+!      endif
+! #endif
+!   endif
 
   energy_mp = temp
   return
@@ -11076,13 +11076,13 @@ real function energy_mt()
 
   vectype :: temp
 
-  if(linear.eq.1) then
+  ! if(linear.eq.1) then
      temp = .5*int3(ri2_79,bz179(:,OP_1),CONJUGATE(bz179(:,OP_1)))
-  else
-!....nonlinear:  do not subtract off equilibrium piece
-     temp = .5*int3(ri2_79,bzt79(:,OP_1),bzt79(:,OP_1))!   &
-!          - .5*int3(ri2_79,bz079(:,OP_1),bz079(:,OP_1))
-  endif
+!   else
+! !....nonlinear:  do not subtract off equilibrium piece
+!      temp = .5*int3(ri2_79,bzt79(:,OP_1),bzt79(:,OP_1))!   &
+! !          - .5*int3(ri2_79,bz079(:,OP_1),bz079(:,OP_1))
+!   endif
 
   energy_mt = temp
   return

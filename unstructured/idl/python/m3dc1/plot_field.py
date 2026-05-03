@@ -344,6 +344,10 @@ def plot_field(
     if coils:
         plot_coils(filename=filename, overplot=True, **plot_kwargs)
 
+    if xrange is not None:
+        plt.xlim(xrange)
+    if yrange is not None:
+        plt.ylim(yrange)
     if xlim is not None:
         plt.xlim(xlim)
     if mpeg is not None:

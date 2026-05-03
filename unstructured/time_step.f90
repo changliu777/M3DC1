@@ -121,6 +121,7 @@ subroutine onestep
   call define_transport_coefficients
 
   ! start of loop to repeat timestep if max iterations exceeded in 3D
+  dt=dt/max_repeat
   do irepeat = 1, max_repeat
 
     ! calculate matrices for time advance
@@ -167,23 +168,30 @@ subroutine onestep
        if(iprint.ge.1) print *, "Time spent in *_step: ", tend-tstart
     end if
 
-    if(nplanes.le.1) exit
-    ! check if time step should be repeated
+  ! copy time advance vectors to field data
+  if(myrank.eq.0 .and. iprint.ge.2) print *, "Exporting time advance vectors.."
 
-#ifdef USE3D
-    maxiter = 0
-    do icount=1,maxnumofsolves
-       maxiter = max(maxiter,int(kspits(icount)))
-    enddo
-    if(myrank.eq.0) write(*,'(A,2i5)') 'ksp_max, maxiter =', ksp_max, maxiter
-    if((maxiter .lt. ksp_max) .or. dtkecrit .le. 0) exit
+! if(eqsubtract.eq.0) call subtract_axi    !DEBUG
+  call export_time_advance_vectors
+    !!if(nplanes.le.1) exit
+    !! check if time step should be repeated
 
-    dt = dt/2.
-    if(myrank.eq.0) write(*,'(A,e12.4)') 'Time step reduced by 2:  dt =', dt
-#else
-    exit
-#endif
+!#ifdef USE3D
+    !maxiter = 0
+    !do icount=1,maxnumofsolves
+    !   maxiter = max(maxiter,int(kspits(icount)))
+    !enddo
+    !if(myrank.eq.0) write(*,'(A,2i5)') 'ksp_max, maxiter =', ksp_max, maxiter
+    !if((maxiter .lt. ksp_max) .or. dtkecrit .le. 0) exit
+
+    !dt = dt/2.
+    !if(myrank.eq.0) write(*,'(A,e12.4)') 'Time step reduced by 2:  dt =', dt
+!#else
+    !exit
+    if (linear.eq.1) calc_matrices=0
+!#endif
   enddo
+  dt=dt*max_repeat
 
 
   time = time + dt
@@ -194,20 +202,21 @@ subroutine onestep
 
 !  call runaway_advance
 
-  ! copy time advance vectors to field data
-  if(myrank.eq.0 .and. iprint.ge.2) print *, "Exporting time advance vectors.."
+  !! copy time advance vectors to field data
+  !if(myrank.eq.0 .and. iprint.ge.2) print *, "Exporting time advance vectors.."
 
-! if(eqsubtract.eq.0) call subtract_axi    !DEBUG
-  call export_time_advance_vectors
+!! if(eqsubtract.eq.0) call subtract_axi    !DEBUG
+  !call export_time_advance_vectors
   !if (irunaway .eq. 2) then
   !   call smooth_runaway
   !endif
 
-!#ifdef USEPARTICLES
-!  if(kinetic.eq.0) then
-!     call set_parallel_velocity
-!  endif
-!#endif
+#ifdef USEPARTICLES
+ if(kinetic.eq.0) then
+    if (nplanes.gt.1) call filter_fields
+    call set_parallel_velocity
+ endif
+#endif
 
 #ifdef USEPARTICLES
   if(myrank.eq.0 .and. itimer.eq.1) call second(tstart)
@@ -295,9 +304,14 @@ subroutine scaleback
 
   implicit none
 
-  vectype, parameter :: scalefac = 1.e-10
+  ! vectype, parameter :: scalefac = 1.e-10
+  ! vectype, parameter :: scalefac = 50.
+  vectype, parameter :: scalefac = 10000.
 
-  if(ekin.lt.max_ke .or. max_ke.eq.0) return
+  ! if(ekin.lt.max_ke .or. max_ke.eq.0) return
+  if(ntime.ne.351) return
+  ! if(ntime.ne.1) return
+  ! if(ntime.ne.301) return
   if(myrank.eq.0) write(*,*) " =>solution scaled back at time", time
 
   call mult(field_vec, scalefac)

@@ -1307,8 +1307,62 @@ int matrix_solve::solve(FieldID field_id) {
   // KSPSetUp(_ksp);
   // KSPSetUpOnBlocks(_ksp); CHKERRQ(ierr);
 
-  ierr = KSPSolve(_ksp, b, x);
+  // ierr = KSPSolve(_ksp, b, x);
+  // CHKERRQ(ierr);
+
+  KSPConvergedReason reason = KSP_CONVERGED_ITERATING;
+
+  int max_retry = 10;
+  int retry = 0;
+
+  while (retry < max_retry) {
+    ierr = KSPSolve(_ksp, b, x);
+
+    if (!ierr) {
+      ierr = KSPGetConvergedReason(_ksp, &reason);
+      CHKERRQ(ierr);
+
+      if (reason > 0)
+        break;  // success
+    }
+
+    retry++;
+
+    if (retry >= max_retry)
+      break;
+
+    if (PCU_Comm_Self() == 0)
+      std::cerr << "\t-- KSPSolve failed. Destroy and recreate KSP, retry "
+                << retry + 1 << "/" << max_retry << std::endl;
+
+    ierr = KSPDestroy(&_ksp);
+    CHKERRQ(ierr);
+
+    ierr = KSPCreate(PETSC_COMM_WORLD, &_ksp);
+    CHKERRQ(ierr);
+
+    _kspSet = 0;
+    setKspType();
+
+    ierr = KSPSetOperators(_ksp, _A, _A);
+    CHKERRQ(ierr);
+
+    ierr = KSPSetFromOptions(_ksp);
+    CHKERRQ(ierr);
+
+    ierr = KSPSetUp(_ksp);
+    CHKERRQ(ierr);
+  }
+
   CHKERRQ(ierr);
+
+  ierr = KSPGetConvergedReason(_ksp, &reason);
+  CHKERRQ(ierr);
+
+  if (reason < 0)
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_CONV_FAILED,
+            "KSPSolve failed after 10 retries with KSPDestroy/KSPCreate");
+
   //  PetscInt its;
   ierr = KSPGetIterationNumber(_ksp, &its);
   CHKERRQ(ierr);
@@ -1448,7 +1502,8 @@ int matrix_solve::setKspType() {
            ierr=PCBJacobiSetTotalBlocks(pc, nplane, blks);
            ierr=PetscFree(blks);
            */
-    if (mymatrix_id == 5)
+    // if (mymatrix_id == 5)
+    if ((mymatrix_id == 5)||(mymatrix_id == 6)||(mymatrix_id == 172))
       ierr = KSPSetOptionsPrefix(_ksp, "hard_");
       ierr = MatViewFromOptions(_A, NULL, "-A_view");
   }

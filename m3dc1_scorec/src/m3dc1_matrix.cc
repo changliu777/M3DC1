@@ -1448,7 +1448,7 @@ int matrix_solve::setKspType() {
            ierr=PCBJacobiSetTotalBlocks(pc, nplane, blks);
            ierr=PetscFree(blks);
            */
-    if (mymatrix_id == 5)
+    if (mymatrix_id == 5) {
       ierr = KSPSetOptionsPrefix(_ksp, "hard_");
       ierr = MatViewFromOptions(_A, NULL, "-A_view");
   }

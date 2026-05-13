@@ -669,7 +669,6 @@ contains
     integer(SIZE_T)  :: num_elements
     integer(HID_T) :: memspace, filespace, dset_id, p_id, plist_id
     integer(HSIZE_T) :: curdim
-    integer :: i
     real, allocatable :: values(:)
     logical :: exists
 
@@ -708,17 +707,19 @@ contains
           call h5dset_extent_f(dset_id, dims, error)
           curdim = dims(1)
        else
-          num_elements = curdim - dims(1) + 1
+          ! Truncate dataset when overwriting (restart), instead of
+          ! writing NaN to trailing entries.
+          call h5dset_extent_f(dset_id, dims, error)
+          curdim = dims(1)
+          num_elements = 1
        end if
     endif
 
     local_dims(1) = num_elements
     allocate(values(num_elements))
     allocate(coord(1,num_elements))
-    values = -1.
-    values = sqrt(values)
     values(1) = value
-    coord(1,:) = (/ (i, i = dims(1), curdim) /)
+    coord(1,1) = dims(1)
 
     if(myrank.eq.0) then
        call h5screate_simple_f(1, local_dims, memspace, error)

@@ -1,7 +1,20 @@
+! ---------------------------------------------------------------------
+! File: output.f90
+! Purpose: Output and HDF5 restart management.
+! Summary:
+! - Manages HDF5 initialization/finalization and writes time-slices,
+!   scalars, and (optionally) particle data.
+! - Controls output frequency, growth-rate checks for linear runs, and
+!   auxiliary field calculations prior to writing.
+! Key dependencies: `hdf5_output`, `diagnostics`, `auxiliary_fields`,
+! `particles`, `signal_handler`. Annotate places where HDF5 IO occurs
+! and where growth-rate-based termination is checked.
+! ---------------------------------------------------------------------
+
 module m3dc1_output
 
-  integer, parameter, private :: ke_file = 11
-  character*(*), parameter, private :: ke_filename = 'C1ke'
+   integer, parameter, private :: ke_file = 11
+   character*(*), parameter, private :: ke_filename = 'C1ke'
 
   integer :: iwrite_transport_coeffs
   integer :: iwrite_aux_vars

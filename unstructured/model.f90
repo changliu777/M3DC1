@@ -1,7 +1,21 @@
+! ---------------------------------------------------------------------
+! File: model.f90
+! Purpose: Defines finite-element matrices/vectors and masks for physical
+! model assembly.
+! Summary:
+! - Declares global vector/matrix objects (types `vector_type`/`matrix_type`)
+!   used throughout assembly and solve phases.
+! - Provides many `get_*_mask` utilities that determine DOF masks per
+!   element for different physical quantities (density, pressure, flux...).
+! Key dependencies: `vector_mod`, `matrix_mod`, `element`, `basic`,
+! `boundary_conditions` modules. Annotate meaning of matrix names (e.g.
+! `s1_mat`, `q1_mat`) and index variables (`u_i`, `psi_i`, ...).
+! ---------------------------------------------------------------------
+
 module model
 
-  use vector_mod
-  use matrix_mod
+   use vector_mod
+   use matrix_mod
 
   integer, allocatable :: global_dof_ids_1(:)
   integer, allocatable :: global_dof_ids_row(:), global_dof_ids_col(:)

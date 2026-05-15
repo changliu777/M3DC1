@@ -1,5 +1,16 @@
-module pid_controller
+! ---------------------------------------------------------------------
+! File: control.f90
+! Purpose: PID controller utilities and helper routines used by
+! the timestep / control system.
+! Summary:
+! - Defines a `pid_control` type and implements `control()` to update
+!   control parameters based on PID logic.
+! - Includes helper `variable_tcur()` for time-dependent control targets.
+! Key dependencies: none (self-contained), used by higher-level
+! timestep and control logic. Annotate tuning parameters and `icontrol_type`.
+! ---------------------------------------------------------------------
 
+module pid_controller
   type :: pid_control
      real :: p, i, d
      real :: err_p_old

@@ -1,3 +1,17 @@
+! ---------------------------------------------------------------------
+! File: input.f90
+! Purpose: Input/namelist handling helpers and the main `input` subroutine.
+! Summary:
+! - Provides wrapper routines to register variables (int, real, string, arrays)
+!   with the internal namelist/variable system used by M3DC1.
+! - Main `input` subroutine sets defaults and calls `read_namelist`.
+! Key dependencies: `basic` module, `read_namelist`, MPI include for rank checks.
+! Suggested annotation points: where defaults are set (`set_defaults`),
+! error handling after `read_namelist`, and any places that map namelist
+! variables to internal variables.
+! This header is a non-functional comment block for maintainers.
+! ---------------------------------------------------------------------
+
 subroutine add_var_double(name, var, default, desc, grp)
   implicit none
 

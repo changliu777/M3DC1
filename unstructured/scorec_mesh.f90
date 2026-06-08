@@ -285,6 +285,19 @@ contains
           print *, '   Plasma:    ', ZONE_PLASMA
           print *, '   Conductor: ', ZONE_CONDUCTOR
           print *, '   Vacuum:    ', ZONE_VACUUM
+          print *, ''
+          print *, ''
+          print *, 'For imulti_region=1 cases using meshes from m3dc1_meshgen,'
+          print *, 'insert the following into C1input: '
+          print *, ''
+          print *, '        boundary_type(1) = 1  ! First wall'
+          print *, '        boundary_type(2) = 1  ! First wall'
+          print *, '        boundary_type(5) = 2  ! Domain boundary'
+          print *, '        boundary_type(6) = 2  ! Domain boundary'
+          print *, ''
+          print *, '        zone_type(1) = 1   ! Plasma'
+          print *, '        zone_type(2) = 2   ! Conductor'
+          print *, '        zone_type(3) = 3   ! Vacuum'
           print *, '================================================================='
        end if
        call safestop(188)

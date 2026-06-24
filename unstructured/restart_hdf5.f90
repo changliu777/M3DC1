@@ -297,10 +297,21 @@ contains
           print *, 'Restarting while changing eqsubtract from 0 to 1'
           print *, 'Previous data will be overwritten.'
        end if
+       u_field(1) = 0.
+       vz_field(1) = 0.
+       chi_field(1) = 0.
        field0_vec = field_vec
        field_vec = 0.
        bfp_field(0) = bfp_field(1)
        bfp_field(1) = 0. 
+       istartnew = 1
+       time = 0
+    end if
+    if(eqsubtract_in.eq.1 .and. eqsubtract.eq.0) then
+       if(myrank.eq.0) then
+          print *, 'Restarting while changing eqsubtract from 1 to 0'
+          print *, 'Previous data will be overwritten.'
+       end if
        istartnew = 1
        time = 0
     end if
@@ -333,18 +344,18 @@ contains
        call hdf5_finalize(error)
        call hdf5_initialize(.false., error)
 
-       if(eqsubtract.eq.0) then
+       if((eqsubtract.eq.0).and.(eqsubtract_in.eq.0)) then
          ! move data to field0 so that equilibrium data is written correctly
          field0_vec = field_vec
          field_vec = 0.
-         nre_field(0) = nre_field(1)
-         nre_field(1) = 0.
+         ! nre_field(0) = nre_field(1)
+         ! nre_field(1) = 0.
        endif
-       call init_perturbations
-       if(eqsubtract.eq.0) then
-         call add_field_to_field(nre_field(1),nre_field(0))
-         nre_field(0) = 0.
-      endif
+       if((eqsubtract.eq.1).and.(eqsubtract_in.eq.0)) call init_perturbations
+          !  if(eqsubtract.eq.0) then
+      !    call add_field_to_field(nre_field(1),nre_field(0))
+      !    nre_field(0) = 0.
+      ! endif
 
       ! For RMP and error fields
       if(irmp.ge.1 .or. iread_ext_field.ge.1 .or. &

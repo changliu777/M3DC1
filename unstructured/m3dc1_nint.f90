@@ -97,9 +97,9 @@ module m3dc1_nint
      ri_79, ri2_79, ri3_79, ri4_79, ri5_79, ri6_79, ri7_79, ri8_79
 !$OMP THREADPRIVATE(r_79,r2_79,r3_79)
 !$OMP THREADPRIVATE(ri_79,ri2_79,ri3_79,ri4_79,ri5_79,ri6_79,ri7_79,ri8_79)
-  vectype, dimension(MAX_PTS) :: temp79a, temp79b, temp79c, &
+  vectype, dimension(MAX_PTS) :: temp79a, gam79, temp79b, temp79c, &
        temp79d, temp79e, temp79f, temp79g
-!$OMP THREADPRIVATE(temp79a,temp79b,temp79c,temp79d,temp79e,temp79f,temp79g)
+!$OMP THREADPRIVATE(temp79a,gam79,temp79b,temp79c,temp79d,temp79e,temp79f,temp79g)
   vectype, dimension(MAX_PTS, OP_NUM) :: tm79, ni79, b2i79, bi79
 !$OMP THREADPRIVATE(tm79,ni79,b2i79,bi79)
   vectype, dimension(MAX_PTS, OP_NUM) :: ps179, bz179, pe179, n179, & 
@@ -787,6 +787,11 @@ contains
        else
           psc79 = 0.
        end if
+
+       gam79 = gam
+       !where(real(ps079(:,OP_1)).gt.0.23)
+       !   gam79 = gam_parabolic
+       !end where
 
        pst79 = ps079 + ps179
        pss79 = ps079 + ps179/2.

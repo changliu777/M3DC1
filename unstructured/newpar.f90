@@ -293,15 +293,15 @@ Program Reducedquintic
 
   ! output equilibrium time slice
   ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  if(ntime.eq.0 .or. (ntime.eq.ntime0 .and. eqsubtract.eq.1)) then
+  if(ntime.eq.0 .or. (ntime.eq.ntime0 .and. eqsubtract.eq.0)) then
 
-     if(eqsubtract.eq.1) then
+     !if(eqsubtract.eq.1) then
         if(myrank.eq.0 .and. iprint.ge.2) print *, "  transport coefficients"
         call find_lcfs()
         call define_transport_coefficients
         call derived_quantities(0)
         if(iwrite_aux_vars.eq.1) call calculate_auxiliary_fields(0)
-     end if
+     !end if
 
      call hdf5_write_time_slice(1,ier)
   end if
@@ -381,7 +381,8 @@ Program Reducedquintic
      endif
 
      ! re-scale solution if energy is too large
-     if(linear.eq.1) call scaleback
+     ! if(linear.eq.1) call scaleback
+     call scaleback
 
      ! take time step
      if(myrank.eq.0 .and. iprint.ge.1) print *, " Calling onestep"

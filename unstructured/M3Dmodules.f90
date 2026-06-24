@@ -112,6 +112,7 @@ module basic
   real :: ion_mass    ! Effective mass of ions (in proton mass/particle)
   real :: lambda_coulomb ! coulomb logarithm
   real :: thermal_force_coeff
+  real :: gam_parabolic
 
   ! domain parameters
   real :: rzero    ! nominal major radius of the device

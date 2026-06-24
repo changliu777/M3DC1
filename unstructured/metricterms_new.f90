@@ -936,7 +936,7 @@ function v1up(e,f,g)
      temp = 2.* &
           (intx4(e(:,:,OP_DZ),r_79,f(:,OP_DR),g(:,OP_DZ)) &
           -intx4(e(:,:,OP_DZ),r_79,f(:,OP_DZ),g(:,OP_DR))) &
-          -4.*gam*intx3(e(:,:,OP_DZ),f(:,OP_DZ),g(:,OP_1))
+          -4.*gam_parabolic*intx3(e(:,:,OP_DZ),f(:,OP_DZ),g(:,OP_1))
   end if
 
   v1up = temp
@@ -1201,7 +1201,7 @@ function v1vp(e,f,g)
 #if defined(USE3D) || defined(USECOMPLEX)
   if(itor.eq.1) then
      temp79a =  f(:,OP_1 )*g(:,OP_DP) &
-          + gam*f(:,OP_DP)*g(:,OP_1 )
+          + gam_parabolic*f(:,OP_DP)*g(:,OP_1 )
      temp = 2.*intx2(e(:,:,OP_DZ),temp79a)
   end if
 #endif
@@ -1562,7 +1562,7 @@ function v1chip(e,f,g)
   if(itor.eq.0) then
      temp = 0.
   else
-     temp79a = gam*f(:,OP_GS)*g(:,OP_1) + &
+     temp79a = gam_parabolic*f(:,OP_GS)*g(:,OP_1) + &
           f(:,OP_DZ)*g(:,OP_DZ) + f(:,OP_DR)*g(:,OP_DR)
      
      temp = 2.*intx3(e(:,:,OP_DZ),ri2_79,temp79a)
@@ -2312,7 +2312,7 @@ function v2up(e,f,g)
        + intx4(e(:,:,OP_1),r_79,f(:,OP_DR),g(:,OP_DZP)) &
        - intx4(e(:,:,OP_1),r_79,f(:,OP_DZ),g(:,OP_DRP))
   if(itor.eq.1) then
-     temp = temp - 2.*gam* &
+     temp = temp - 2.*gam_parabolic* &
           (intx3(e(:,:,OP_1),f(:,OP_DZP),g(:,OP_1)) &
           +intx3(e(:,:,OP_1),f(:,OP_DZ),g(:,OP_DP)))
   endif
@@ -2338,8 +2338,8 @@ function v2vp(e,f,g)
   temp = 0.
 #if defined(USE3D) || defined(USECOMPLEX)
   temp =          intx3(e(:,:,OP_1),g(:,OP_DPP),f(:,OP_1)) &
-       + (1.+gam)*intx3(e(:,:,OP_1),g(:,OP_DP),f(:,OP_DP)) &
-       + gam*     intx3(e(:,:,OP_1),g(:,OP_1),f(:,OP_DPP))
+       + (1.+gam_parabolic)*intx3(e(:,:,OP_1),g(:,OP_DP),f(:,OP_DP)) &
+       + gam_parabolic*     intx3(e(:,:,OP_1),g(:,OP_1),f(:,OP_DPP))
 #endif
 
   v2vp = temp
@@ -2369,10 +2369,10 @@ function v2chip(e,f,g)
        + intx4(e(:,:,OP_1),ri2_79,f(:,OP_DR),g(:,OP_DRP))    &
        + intx4(e(:,:,OP_1),ri2_79,f(:,OP_DZ),g(:,OP_DZP))    &
 #ifdef USEST
-       - gam*intx4(e(:,:,OP_DP),ri2_79,f(:,OP_GS),g(:,OP_1 ))    
+       - gam_parabolic*intx4(e(:,:,OP_DP),ri2_79,f(:,OP_GS),g(:,OP_1 ))    
 #else
-       + gam*intx4(e(:,:,OP_1),ri2_79,f(:,OP_GSP),g(:,OP_1 ))    &
-       + gam*intx4(e(:,:,OP_1),ri2_79,f(:,OP_GS),g(:,OP_DP))
+       + gam_parabolic*intx4(e(:,:,OP_1),ri2_79,f(:,OP_GSP),g(:,OP_1 ))    &
+       + gam_parabolic*intx4(e(:,:,OP_1),ri2_79,f(:,OP_GS),g(:,OP_DP))
 #endif
 #endif
 
@@ -3790,7 +3790,7 @@ function v3up(e,f,g)
   temp = intx4(e(:,:,OP_GS),ri_79,f(:,OP_DR),g(:,OP_DZ)) &
        - intx4(e(:,:,OP_GS),ri_79,f(:,OP_DZ),g(:,OP_DR))
   if(itor.eq.1) then
-     temp = temp - 2.*gam* &
+     temp = temp - 2.*gam_parabolic* &
           intx4(e(:,:,OP_GS),ri2_79,f(:,OP_DZ),g(:,OP_1))
   endif
 
@@ -3816,7 +3816,7 @@ function v3vp(e,f,g)
   temp = 0.
 
 #if defined(USE3D) || defined(USECOMPLEX)
-  temp = gam*intx4(e(:,:,OP_GS),ri2_79,f(:,OP_DP),g(:,OP_1)) &
+  temp = gam_parabolic*intx4(e(:,:,OP_GS),ri2_79,f(:,OP_DP),g(:,OP_1)) &
        + intx4(e(:,:,OP_GS),ri2_79,f(:,OP_1),g(:,OP_DP))
 #endif
 
@@ -3841,7 +3841,7 @@ function v3chip(e,f,g)
 
   temp = intx4(e(:,:,OP_GS),ri4_79,f(:,OP_DZ),g(:,OP_DZ)) &
        + intx4(e(:,:,OP_GS),ri4_79,f(:,OP_DR),g(:,OP_DR)) &
-       + gam*intx4(e(:,:,OP_GS),ri4_79,f(:,OP_GS),g(:,OP_1))
+       + gam_parabolic*intx4(e(:,:,OP_GS),ri4_79,f(:,OP_GS),g(:,OP_1))
 
   v3chip = temp
 end function v3chip
@@ -9311,7 +9311,7 @@ function p1pu(e,f,g)
 
   if(itor.eq.1) then
      temp = temp + &
-          2.*(gam-1.)*intx3(e(:,:,OP_1),f(:,OP_1),g(:,OP_DZ))
+          2.*intx4(e(:,:,OP_1),gam79 - 1.,f(:,OP_1),g(:,OP_DZ))
   endif
 
   p1pu = temp
@@ -9334,7 +9334,7 @@ function p1pv(e,f,g)
 
 #if defined(USE3D) || defined(USECOMPLEX)
   temp = - intx3(e(:,:,OP_1),f(:,OP_DP),g(:,OP_1)) &
-       - gam*intx3(e(:,:,OP_1),f(:,OP_1),g(:,OP_DP))
+       - intx4(e(:,:,OP_1),gam79,f(:,OP_1),g(:,OP_DP))
 #else
   temp = 0.
 #endif
@@ -9359,7 +9359,7 @@ function p1pchi(e,f,g)
 
   temp = intx4(e(:,:,OP_DR),ri2_79,g(:,OP_DR),f(:,OP_1)) &
        + intx4(e(:,:,OP_DZ),ri2_79,g(:,OP_DZ),f(:,OP_1)) &
-       - (gam-1.)*intx4(e(:,:,OP_1),ri2_79,g(:,OP_GS),f(:,OP_1))
+       - intx5(e(:,:,OP_1),ri2_79,gam79 - 1.,g(:,OP_GS),f(:,OP_1))
 
   p1pchi = temp
 end function p1pchi
@@ -11013,7 +11013,7 @@ real function energy_mp(mask)
   end if
 
 
-  if(linear.eq.1) then
+  ! if(linear.eq.1) then
      temp = .5* &
           (int4(ri2_79,ps179(:,OP_DZ),CONJUGATE(ps179(:,OP_DZ)),temp79a) &
           +int4(ri2_79,ps179(:,OP_DR),CONJUGATE(ps179(:,OP_DR)),temp79a))
@@ -11028,37 +11028,37 @@ real function energy_mp(mask)
              -int4(ri_79,CONJUGATE(ps179(:,OP_DR)),bfp179(:,OP_DZ),temp79a))
      endif
 #endif
-  else
-!    nonlinear:  do not subtract off equilibrium piece
-     temp = .5* &
-          (int4(ri2_79,pst79(:,OP_DZ),pst79(:,OP_DZ),temp79a) &
-          +int4(ri2_79,pst79(:,OP_DR),pst79(:,OP_DR),temp79a)) ! &
-!          - .5* &
-!          (int4(ri2_79,ps079(:,OP_DZ),ps079(:,OP_DZ),temp79a) &
-!          +int4(ri2_79,ps079(:,OP_DR),ps079(:,OP_DR),temp79a))
-#if defined(USE3D)
-     if(numvar.gt.1) then
-        temp = temp   &
-             + .5* &
-             (int3(bfpt79(:,OP_DZ),bfpt79(:,OP_DZ),temp79a) &
-             +int3(bfpt79(:,OP_DR),bfpt79(:,OP_DR),temp79a) &
-             +2.*int4(ri_79,pst79(:,OP_DZ),bfpt79(:,OP_DR),temp79a) &
-             -2.*int4(ri_79,pst79(:,OP_DR),bfpt79(:,OP_DZ),temp79a) )
-     endif
-#endif
-
-#ifdef USECOMPLEX
-     if(numvar.gt.1) then
-        temp = temp + .5* &
-             (int3(bfpt79(:,OP_DZ),CONJUGATE(bfpt79(:,OP_DZ)),temp79a) &
-             +int3(bfpt79(:,OP_DR),CONJUGATE(bfpt79(:,OP_DR)),temp79a) &
-             +int4(ri_79,pst79(:,OP_DZ),CONJUGATE(bfpt79(:,OP_DR)),temp79a) &
-             -int4(ri_79,pst79(:,OP_DR),CONJUGATE(bfpt79(:,OP_DR)),temp79a) &
-             +int4(ri_79,CONJUGATE(pst79(:,OP_DZ)),bfpt79(:,OP_DR),temp79a) &
-             -int4(ri_79,CONJUGATE(pst79(:,OP_DR)),bfpt79(:,OP_DZ),temp79a))
-     endif
-#endif
-  endif
+!   else
+! !    nonlinear:  do not subtract off equilibrium piece
+!      temp = .5* &
+!           (int4(ri2_79,pst79(:,OP_DZ),pst79(:,OP_DZ),temp79a) &
+!           +int4(ri2_79,pst79(:,OP_DR),pst79(:,OP_DR),temp79a)) ! &
+! !          - .5* &
+! !          (int4(ri2_79,ps079(:,OP_DZ),ps079(:,OP_DZ),temp79a) &
+! !          +int4(ri2_79,ps079(:,OP_DR),ps079(:,OP_DR),temp79a))
+! #if defined(USE3D)
+!      if(numvar.gt.1) then
+!         temp = temp   &
+!              + .5* &
+!              (int3(bfpt79(:,OP_DZ),bfpt79(:,OP_DZ),temp79a) &
+!              +int3(bfpt79(:,OP_DR),bfpt79(:,OP_DR),temp79a) &
+!              +2.*int4(ri_79,pst79(:,OP_DZ),bfpt79(:,OP_DR),temp79a) &
+!              -2.*int4(ri_79,pst79(:,OP_DR),bfpt79(:,OP_DZ),temp79a) )
+!      endif
+! #endif
+!
+! #ifdef USECOMPLEX
+!      if(numvar.gt.1) then
+!         temp = temp + .5* &
+!              (int3(bfpt79(:,OP_DZ),CONJUGATE(bfpt79(:,OP_DZ)),temp79a) &
+!              +int3(bfpt79(:,OP_DR),CONJUGATE(bfpt79(:,OP_DR)),temp79a) &
+!              +int4(ri_79,pst79(:,OP_DZ),CONJUGATE(bfpt79(:,OP_DR)),temp79a) &
+!              -int4(ri_79,pst79(:,OP_DR),CONJUGATE(bfpt79(:,OP_DR)),temp79a) &
+!              +int4(ri_79,CONJUGATE(pst79(:,OP_DZ)),bfpt79(:,OP_DR),temp79a) &
+!              -int4(ri_79,CONJUGATE(pst79(:,OP_DR)),bfpt79(:,OP_DZ),temp79a))
+!      endif
+! #endif
+!   endif
 
   energy_mp = temp
   return
@@ -11076,13 +11076,13 @@ real function energy_mt()
 
   vectype :: temp
 
-  if(linear.eq.1) then
+  ! if(linear.eq.1) then
      temp = .5*int3(ri2_79,bz179(:,OP_1),CONJUGATE(bz179(:,OP_1)))
-  else
-!....nonlinear:  do not subtract off equilibrium piece
-     temp = .5*int3(ri2_79,bzt79(:,OP_1),bzt79(:,OP_1))!   &
-!          - .5*int3(ri2_79,bz079(:,OP_1),bz079(:,OP_1))
-  endif
+!   else
+! !....nonlinear:  do not subtract off equilibrium piece
+!      temp = .5*int3(ri2_79,bzt79(:,OP_1),bzt79(:,OP_1))!   &
+! !          - .5*int3(ri2_79,bz079(:,OP_1),bz079(:,OP_1))
+!   endif
 
   energy_mt = temp
   return

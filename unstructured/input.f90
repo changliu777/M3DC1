@@ -393,6 +393,7 @@ subroutine set_defaults
        "Coulomb logarithm", misc_grp)
   call add_var_double("thermal_force_coeff", thermal_force_coeff, 0., &
        "Coefficient of thermal force", misc_grp)
+ call add_var_double("gam_parabolic", gam_parabolic, -1., "", misc_grp)
   
 
   ! Model options
@@ -1462,6 +1463,7 @@ subroutine validate_input
   !endif
   if(myrank.eq.0 .and. iprint.ge.1) print *, "pefac = ", pefac
 
+  if(gam_parabolic.eq.-1) gam_parabolic = gam
   if(iadapt.gt.0) then
 #if defined(USECOMPLEX)
 !      if(myrank.eq.0) print *, "ERROR:  must use real version of code for iadapt.gt.0"

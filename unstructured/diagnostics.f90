@@ -3436,7 +3436,7 @@ end subroutine te_max_dev
 #ifdef USEPARTICLES
           ! phi
           call evaluate(mag_probe_x(i),mag_probe_phi(i),mag_probe_z(i), &
-               val,u_field(1),mag_probe_itri(i),ierr)
+               val,psi_field(1),mag_probe_itri(i),ierr)
 #else
           ! bz
           call evaluate(mag_probe_x(i),mag_probe_phi(i),mag_probe_z(i), &

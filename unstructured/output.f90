@@ -1192,7 +1192,6 @@ subroutine output_fields(time_group_id, equilibrium, error)
      call write_field(group_id, "tf",   tf_field, nelms, error)
      call write_field(group_id, "nfi",  nfi_field, nelms, error)
      call write_field(group_id, "tfi",  tfi_field, nelms, error)
-     call write_field(group_id, "pfi",  pfi_field, nelms, error)
  
         ! Fast-ion pressure tensor components.
         call write_field(group_id, "p_f_perp", p_f_perp(ilin), nelms, error)

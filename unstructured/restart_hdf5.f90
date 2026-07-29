@@ -479,7 +479,6 @@ contains
        ! den_field(1)=0.
        call h5r_read_field(group_id, "nfi",  nfi_field, nelms, error)
        call h5r_read_field(group_id, "tfi",  tfi_field, nelms, error)
-       call h5r_read_field(group_id, "pfi",  pfi_field, nelms, error)
     endif
 #endif
 

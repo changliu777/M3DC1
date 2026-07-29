@@ -6032,7 +6032,7 @@ subroutine ludefvel_n(itri)
         call insert_block(vp0,itri,ieq(k), pp_i,dd(:,:,  p_g),MAT_ADD)
      end if
      if(idens.eq.1) then
-        call insert_block(vn0,itri,ieq(k),den_idx,dd(:,:,den_g),MAT_ADD)
+        call insert_block(vn0,itri,ieq(k),den_i,dd(:,:,den_g),MAT_ADD)
      endif
      if(i3d.eq.1 .and. numvar.ge.2) then
         call insert_block(vf0,itri,ieq(k),bf_i,q_bf(:,:),MAT_ADD)
@@ -6048,7 +6048,7 @@ subroutine ludefvel_n(itri)
         if(numvar.ge.3 .or. ipres.eq.1) &
              call insert_block(vp1,itri,ieq(k), pp_i,ss(:,:,  p_g),MAT_ADD)
         if(idens.eq.1) &
-             call insert_block(vn1,itri,ieq(k),den_idx,ss(:,:,den_g),MAT_ADD)
+             call insert_block(vn1,itri,ieq(k),den_i,ss(:,:,den_g),MAT_ADD)
      endif
 
      call vector_insert_block(vsource,itri,ieq(k),r4,VEC_ADD)
@@ -6355,8 +6355,8 @@ subroutine ludefphi_n(itri)
         call insert_block(bv0,itri,ieq(k),chi_i,dd(:,:,chi_g),MAT_ADD)
      endif
      if(idens.eq.1) then
-        call insert_block(bn1,itri,ieq(k),den_idx,ss(:,:,den_g),MAT_ADD)
-        call insert_block(bn0,itri,ieq(k),den_idx,dd(:,:,den_g),MAT_ADD)
+        call insert_block(bn1,itri,ieq(k),den_i,ss(:,:,den_g),MAT_ADD)
+        call insert_block(bn0,itri,ieq(k),den_i,dd(:,:,den_g),MAT_ADD)
      endif
      if(irunaway .gt. 0) then
         call insert_block(bnre1,itri,ieq(k),nre_i,ss(:,:,nre_g),MAT_ADD)
@@ -6676,8 +6676,8 @@ subroutine ludefpres_n(itri)
      call vector_insert_block(psource,itri,ieq(k),q4,VEC_ADD)
 
      if(idens.eq.1) then
-        call insert_block(pn1,itri,ieq(k),den_idx,ss(:,:,den_g),MAT_ADD)
-        call insert_block(pn0,itri,ieq(k),den_idx,dd(:,:,den_g),MAT_ADD)
+        call insert_block(pn1,itri,ieq(k),den_i,ss(:,:,den_g),MAT_ADD)
+        call insert_block(pn0,itri,ieq(k),den_i,dd(:,:,den_g),MAT_ADD)
      endif
      if(i3d.eq.1 .and. numvar.ge.2) then
         call insert_block(pf0,itri,ieq(k),bf_i, q_bf(:,:),MAT_ADD)
@@ -6865,20 +6865,20 @@ subroutine ludefden_n(itri)
 
   ! Insert data into matrices
 !$OMP CRITICAL
-  call insert_block(nn1,itri,den_idx,den_idx,ssterm,MAT_ADD)
-  call insert_block(nn0,itri,den_idx,den_idx,ddterm,MAT_ADD)
-  call insert_block(nv1,itri,den_idx,u_i,rrterm(:,:,1),MAT_ADD)
-  call insert_block(nv0,itri,den_idx,u_i,qqterm(:,:,1),MAT_ADD)
+  call insert_block(nn1,itri,den_i,den_i,ssterm,MAT_ADD)
+  call insert_block(nn0,itri,den_i,den_i,ddterm,MAT_ADD)
+  call insert_block(nv1,itri,den_i,u_i,rrterm(:,:,1),MAT_ADD)
+  call insert_block(nv0,itri,den_i,u_i,qqterm(:,:,1),MAT_ADD)
   if(numvar.ge.2) then
-     call insert_block(nv1,itri,den_idx,vz_i,rrterm(:,:,2),MAT_ADD)
-     call insert_block(nv0,itri,den_idx,vz_i,qqterm(:,:,2),MAT_ADD)
+     call insert_block(nv1,itri,den_i,vz_i,rrterm(:,:,2),MAT_ADD)
+     call insert_block(nv0,itri,den_i,vz_i,qqterm(:,:,2),MAT_ADD)
   endif
   if(numvar.ge.3) then
-     call insert_block(nv1,itri,den_idx,chi_i,rrterm(:,:,3),MAT_ADD)
-     call insert_block(nv0,itri,den_idx,chi_i,qqterm(:,:,3),MAT_ADD)
+     call insert_block(nv1,itri,den_i,chi_i,rrterm(:,:,3),MAT_ADD)
+     call insert_block(nv0,itri,den_i,chi_i,qqterm(:,:,3),MAT_ADD)
   endif
 
-  call vector_insert_block(nsource,itri,den_idx,oterm,VEC_ADD)
+  call vector_insert_block(nsource,itri,den_i,oterm,VEC_ADD)
 !$OMP END CRITICAL
 end subroutine ludefden_n
 

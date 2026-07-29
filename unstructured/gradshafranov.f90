@@ -1634,42 +1634,6 @@ endif
      !call mult(b1vecini_vec,0.25)
      tfi_field = b1vecini_vec
   end if
-  ! Define pfi field
-  if(allocated(tfi_spline%y)) then
-     if(myrank.eq.0 .and. iprint.ge.2) print *, '  calculating pfi...'
-     b1vecini_vec = 0.
-     do itri=1,numelms
-        call define_element_quadrature(itri, int_pts_main, int_tor)
-        call define_fields(itri, 0, 1, 0)
-
-        call eval_ops(itri, psi_field(0), ps079)
-        if(icsubtract.eq.1) then
-           call eval_ops(itri, psi_coil_field, psc79)
-           ps079 = ps079 + psc79
-        end if
-
-        call get_zone(itri, izone)
-
-        do i=1, npoints
-           call calc_fidensity(ps079(i,:),tf,x_79(i),z_79(i),izone)
-           call calc_fitemp(ps079(i,:),tf2,x_79(i),z_79(i),izone)
-           temp79a(i) =tf*tf2* 1.6022e-12 / (b0_norm**2/(4.*pi*n0_norm))!rsae
-        end do
-
-        temp(:,1) = intx2(mu79(:,:,OP_1),temp79a)
-        call vector_insert_block(b1vecini_vec%vec,itri,1,temp(:,1),VEC_ADD)
-     end do
-
-     call newvar_solve(b1vecini_vec%vec,mass_mat_lhs)
-     !call mult(b1vecini_vec,0.5)
-     pfi_field = b1vecini_vec
-  end if 
-
-  if ((kinetic.eq.1).and.(particle_couple.ge.0).and.(kinetic_thermal_ion.eq.1)) then
-     call mult(pfi_field, -1.)
-     call add(p_field(0), pfi_field)
-     call mult(pfi_field, -1.)
-  endif
 #endif
 
   ! Define pe field

@@ -595,7 +595,7 @@ module arrays
 #endif
 #ifdef USEPARTICLES
   type(field_type) :: rho_field, nf_field, tf_field, vfpar0_field
-  type(field_type) :: nfi_field, tfi_field, pfi_field, densmooth_field, vparsmooth_field
+  type(field_type) :: nfi_field, tfi_field, densmooth_field, vparsmooth_field
   type(field_type) :: epar_field, den2_field
 
   type(field_type) :: p_f_par(0:1), p_f_perp(0:1)  !Kinetic pressure tensor components

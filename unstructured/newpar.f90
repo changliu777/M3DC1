@@ -1485,7 +1485,6 @@ endif
      call create_field(tf_field)
      call create_field(nfi_field)
      call create_field(tfi_field)
-     call create_field(pfi_field)
      call create_field(densmooth_field)
      call create_field(vparsmooth_field)
      call create_field(ustar_field)

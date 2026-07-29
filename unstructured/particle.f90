@@ -356,6 +356,11 @@ subroutine particle_test
       call add(p_field(0), p_f_par(0), -1./3.)
       call add(p_field(0), p_f_perp(0), -2./3.)
    endif
+   if ((ntime.eq.0).and.(kinetic.eq.1).and.(particle_couple.ge.0) &
+        .and.(kinetic_thermal_ion.eq.1)) then
+      call add(p_field(0), p_i_par(0), -1./3.)
+      call add(p_field(0), p_i_perp(0), -2./3.)
+   endif
 
    call MPI_Barrier(MPI_COMM_WORLD, ierr)
 end subroutine particle_test

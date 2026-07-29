@@ -138,6 +138,9 @@ subroutine init_perturbations
   use m3dc1_nint
   use newvar_mod
   use diagnostics
+#ifdef USEST
+  use physical_mesh, only: physical_geometry
+#endif
 
   implicit none
 
@@ -145,6 +148,10 @@ subroutine init_perturbations
   integer :: itri, numelms, i, izone, ifield
   integer, dimension(MAX_PTS) :: imr
   vectype, dimension(dofs_per_element) :: dofs
+  real, parameter :: phi_gaussian_sigma = 0.2
+  real, parameter :: phi_tanh_width = 0.2
+  real :: axis_r, axis_z
+  real, dimension(MAX_PTS) :: minor_radius_sq, radial_offset
 
   call create_field(psi_vec)
   call create_field(phi_vec)
@@ -155,6 +162,14 @@ subroutine init_perturbations
   ifield = FIELD_PSI + FIELD_P + FIELD_KIN
 
   numelms = local_elements()
+
+  axis_r = xmag
+  axis_z = zmag
+#ifdef USEST
+  if(igeometry.eq.1) then
+     call physical_geometry(axis_r, axis_z, xmag, 0., zmag)
+  endif
+#endif
 
   if(myrank.eq.0 .and. iprint.ge.1) print *, 'Defining initial perturbations'
 
@@ -169,16 +184,21 @@ subroutine init_perturbations
      ps179 = 0.
      ph179 = 0.
 
-     ! calculate perturbed fields
-#ifdef USEST
-     if(igeometry.eq.1) then
-        call init_random(xl_79, phi_79, zl_79, ph179(:,OP_1))
-     else
-        call init_random(x_79-xmag, phi_79, z_79, ph179(:,OP_1))
-     endif
-#else
-     call init_random(x_79-xmag, phi_79, z_79, ph179(:,OP_1))
-#endif
+     ! Original random perturbation:
+     !#ifdef USEST
+     !if(igeometry.eq.1) then
+     !   call init_random(xl_79, phi_79, zl_79, ph179(:,OP_1))
+     !else
+     !   call init_random(x_79-xmag, phi_79, z_79, ph179(:,OP_1))
+     !endif
+     !#else
+     !call init_random(x_79-xmag, phi_79, z_79, ph179(:,OP_1))
+     !#endif
+
+     radial_offset = x_79 - axis_r
+     minor_radius_sq = radial_offset**2 + (z_79-axis_z)**2
+     ph179(:,OP_1) = eps*exp(-0.5*minor_radius_sq/phi_gaussian_sigma**2) &
+          *tanh(radial_offset/phi_tanh_width)
 
      ph179(:,OP_1) = ph179(:,OP_1) + r_79*verzero
 
@@ -188,7 +208,8 @@ subroutine init_perturbations
              x_79(:), z_79(:), imr)
 
 #ifdef USEPARTICLES
-        where((imr.eq.REGION_PLASMA).and.(abs(rhof79(:,OP_1))<0.5))
+        ! where((imr.eq.REGION_PLASMA).and.(abs(rhof79(:,OP_1))<0.5))
+        where((imr.eq.REGION_PLASMA))
 #else
         where(imr.eq.REGION_PLASMA)
 #endif
@@ -625,27 +646,6 @@ subroutine kinetic_eq
      call newvar_solve(den_vec%vec, mass_mat_lhs)
 
      tfi_field = den_vec
-
-     den_vec=0.
-     do itri=1,numelms
-        call define_element_quadrature(itri,int_pts_main,int_pts_tor)
-        call define_fields(itri,def_fields,1,0)
-        call get_zone(itri, izone)
-        temp79b = (xl_79 - xcenter)**2 + (zl_79 - zcenter)**2
-        if (file_exists) then
-           do j = 1, npoints
-              call evaluate_spline(nfi_spline, temp79b(j), val)
-              call evaluate_spline(tfi_spline, temp79b(j), val2)
-              temp79a(j) = val*val2* 1.6022e-12 / (b0_norm**2/(4.*pi*n0_norm))!rsae
-           end do
-        else
-           temp79a = 0.5*p079(:,OP_1)
-        endif
-        dofs = intx2(mu79(:,:,OP_1), temp79a)
-        call vector_insert_block(den_vec%vec,itri,1,dofs,VEC_ADD)
-     end do
-     call newvar_solve(den_vec%vec,mass_mat_lhs)
-     pfi_field = den_vec
   endif
 
 
@@ -667,12 +667,6 @@ subroutine kinetic_eq
 
      call newvar_solve(den_vec%vec,mass_mat_lhs)
      rho_field = den_vec
-  endif
-
-  if ((kinetic.eq.1).and.(particle_couple.ge.0).and.(kinetic_thermal_ion.eq.1)) then
-     call mult(pfi_field, -1.)
-     call add(p_field(0), pfi_field)
-     call mult(pfi_field, -1.)
   endif
   pe_field(0) = p_field(0)
   call mult(pe_field(0), pefac)

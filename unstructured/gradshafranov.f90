@@ -1576,47 +1576,6 @@ endif
      !call mult(b1vecini_vec,0.25)
      tf_field = b1vecini_vec
   end if
-  ! Define pf field
-  if(allocated(tf_spline%y)) then
-     if(myrank.eq.0 .and. iprint.ge.2) print *, '  calculating pf...'
-     b1vecini_vec = 0.
-     do itri=1,numelms
-        call define_element_quadrature(itri, int_pts_main, int_tor)
-        call define_fields(itri, 0, 1, 0)
-
-        call eval_ops(itri, psi_field(0), ps079)
-        if(icsubtract.eq.1) then
-           call eval_ops(itri, psi_coil_field, psc79)
-           ps079 = ps079 + psc79
-        end if
-
-        call get_zone(itri, izone)
-
-        do i=1, npoints
-           call calc_fdensity(ps079(i,:),tf,x_79(i),z_79(i),izone)
-           call calc_ftemp(ps079(i,:),tf2,x_79(i),z_79(i),izone)
-           if ((fast_ion_dist==1).or.(fast_ion_dist==0)) then
-              temp79a(i) =tf*tf2* 1.6022e-12 / (b0_norm**2/(4.*pi*n0_norm))!rsae
-           else
-              crit_v=sqrt(2*tf2*1.6e-19/fast_ion_mass/m_p)
-              max_v=sqrt(2*fast_ion_max_energy*1.6e-19/fast_ion_mass/m_p)
-              norm_1=1./6.*(-crit_v**2*log(crit_v**2-crit_v*max_v+max_v**2)+2*crit_v**2*log(crit_v+max_v)-2*sqrt(3.)*&
-                 crit_v**2*atan((2*max_v-crit_v)/(sqrt(3.)*crit_v))+3*max_v**2)
-              norm_2=1./6.*(-crit_v**2*log(crit_v**2)+2*crit_v**2*log(crit_v)-2*sqrt(3.)*crit_v**2*atan(-1./sqrt(3.)))
-              dnorm=1./3.*(log(max_v**3+crit_v**3)-log(crit_v**3))
-              temp79a(i) =tf*(norm_1-norm_2)/dnorm*fast_ion_mass*m_p/3.0&
-                 *1.e7 / (b0_norm**2/(4.*pi*n0_norm))!rsae
-           endif
-        end do
-
-        temp(:,1) = intx2(mu79(:,:,OP_1),temp79a)
-        call vector_insert_block(b1vecini_vec%vec,itri,1,temp(:,1),VEC_ADD)
-     end do
-
-     call newvar_solve(b1vecini_vec%vec,mass_mat_lhs)
-     !call mult(b1vecini_vec,0.5)
-     pf_field = b1vecini_vec
-  end if 
   ! Define nfi field
   if(allocated(nfi_spline%y)) then
      if(myrank.eq.0 .and. iprint.ge.2) print *, '  calculating nfi...'
@@ -1705,12 +1664,6 @@ endif
      !call mult(b1vecini_vec,0.5)
      pfi_field = b1vecini_vec
   end if 
-
-  if ((kinetic.eq.1).and.(particle_couple.ge.0).and.(kinetic_fast_ion.eq.1)) then
-     call mult(pf_field, -1.)
-     call add(p_field(0), pf_field)
-     call mult(pf_field, -1.)
-  endif
 
   if ((kinetic.eq.1).and.(particle_couple.ge.0).and.(kinetic_thermal_ion.eq.1)) then
      call mult(pfi_field, -1.)

@@ -98,7 +98,7 @@ contains
     vz_i = 3
     bz_i = 4
     chi_i = 5
-    den_i = 2*numvar+idens
+    den_idx = 2*numvar+idens
     nre_i = 2*numvar+idens+irunaway
     if(numvar.ge.3) then
        p_i = 6
@@ -134,7 +134,7 @@ contains
     end if
     
     if(idens.eq.1) then
-       call associate_field(den_v,  phi_vec,    den_i)
+       call associate_field(den_v,  phi_vec,    den_idx)
     end if
 
     if(irunaway.eq.1) then

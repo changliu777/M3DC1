@@ -383,7 +383,7 @@ call PetscLogStagePop(jer)
     vz_i = 2
     bz_i = 2
     chi_i = 3
-    den_i = 1
+    den_idx = 1
     if(irunaway.gt.0) nre_i = 1
     if(imp_bf.eq.1) then
        if((jadv.eq.0).or.(jadv.eq.1 .and. imp_hyper.ge.1)) then
@@ -449,11 +449,11 @@ call PetscLogStagePop(jer)
        end if
     endif  !  on ipressplit.eq.1
     
-    call associate_field(den_v,  den_vec,    den_i)
+    call associate_field(den_v,  den_vec,    den_idx)
     call associate_field(ne_v,    ne_vec,        1)
     if(irunaway.gt.0) call associate_field(nre_v,  nre_vec,    nre_i)
 #ifdef USEPARTICLES
-    if(itwofluid.gt.0) call associate_field(densmooth_v,  densmooth_vec,    den_i)
+    if(itwofluid.gt.0) call associate_field(densmooth_v,  densmooth_vec,    den_idx)
 #endif
     
     if((jadv.eq.0).or.(jadv.eq.1 .and. imp_hyper.ge.1)) then

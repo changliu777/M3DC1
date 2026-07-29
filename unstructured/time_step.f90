@@ -28,7 +28,7 @@ contains
        print *, 'Index of Psi: ', psi_i
        print *, 'Index of Bz: ', bz_i
        print *, 'Index of P: ', p_i
-       print *, 'Index of n: ', den_i
+       print *, 'Index of n: ', den_idx
        print *, 'Index of Pe: ', pe_i
        print *, 'Index of f: ', bf_i
        print *, 'Index of E: ', e_i
@@ -141,7 +141,7 @@ subroutine onestep
     endif
 
 #ifdef USEPARTICLES
-    if ((kinetic .eq. 1) .and. (linear .eq. 1)) then
+    if (((kinetic .eq. 1).or.(irunaway_kinetic .eq. 1)) .and. (linear .eq. 1)) then
        if (myrank .eq. 0 .and. itimer .eq. 1) call second(tstart)
        call ludefvel_nolin
        if (myrank .eq. 0 .and. itimer .eq. 1) then

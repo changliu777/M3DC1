@@ -23,7 +23,7 @@ module model
   ! positions
   integer :: u_i, vz_i, chi_i
   integer :: psi_i, bz_i, pe_i
-  integer :: den_i, p_i
+  integer :: den_idx, p_i
   integer :: bf_i, e_i
   integer :: te_i, ti_i
   integer :: nre_i

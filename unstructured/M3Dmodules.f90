@@ -316,6 +316,7 @@ module basic
                          ! 3 = CGL form for pressure tensor (full)
 #ifdef USEPARTICLES
   integer :: kinetic_fast_ion, kinetic_thermal_ion
+  integer :: irestart_particle
   integer :: igyroaverage
   integer :: particle_linear
   integer :: particle_substeps

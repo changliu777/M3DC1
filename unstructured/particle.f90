@@ -132,6 +132,7 @@ module particles
 !$acc declare link(energy_array, pitch_array, r_array)
    real, dimension(:, :, :), allocatable :: f_array
 !$acc declare link(f_array)
+   logical :: deposit_equilibrium_moments = .false.
 contains
 
 #ifdef USEPARTICLES
@@ -286,6 +287,7 @@ subroutine particle_test
    type(particle) :: dpar
    type(xgeomterms) :: geomterms
    integer :: itri, ielm, izone
+   logical :: restart_particles
 
 
 
@@ -306,7 +308,9 @@ subroutine particle_test
 
    !Initialize particle population
    call second(tstart)
-   call init_particles(irestart .gt. 0, ierr)
+   restart_particles = (irestart_particle.eq.1)
+   deposit_equilibrium_moments = (ntime.eq.0 .or. .not.restart_particles)
+   call init_particles(restart_particles, ierr)
    if (ierr .ne. 0) return
    if (myrank .eq. 0) then
       call second(tend)
@@ -315,7 +319,7 @@ subroutine particle_test
    end if
    !call particle_step(dt*t0_norm)
 
-   if (irestart.eq.0) then
+   if (.not.restart_particles) then
       nrmfac(:)=1.0
       call update_particle_pressure
       nrmfac_temp(:)=0.
@@ -361,6 +365,7 @@ subroutine particle_test
       call add(p_field(0), p_i_par(0), -1./3.)
       call add(p_field(0), p_i_perp(0), -2./3.)
    endif
+   deposit_equilibrium_moments = .false.
 
    call MPI_Barrier(MPI_COMM_WORLD, ierr)
 end subroutine particle_test
@@ -3419,12 +3424,15 @@ subroutine particle_pressure_rhs
    real, dimension(vspdims) :: vtemp
    real, dimension(3) :: B_cyl, gradB0, gradB1
    real :: dB1
+   logical :: deposit_equilibrium
    !nelms = size(pdata)
    !nelms = local_elements()
    !elcoefs(:)%itri = 0
 
+   deposit_equilibrium = deposit_equilibrium_moments
+
    coeffspaf_local = 0.; coeffspef_local = 0.
-   if (ntime.eq.0) then
+   if (deposit_equilibrium) then
       coeffspaf0_local = 0.
       coeffspef0_local = 0.
       coeffspai0_local = 0.
@@ -3529,7 +3537,7 @@ subroutine particle_pressure_rhs
          if (pdata(ipart)%sps == 1) then
             coeffsdei0_local(:,itri) = coeffsdei0_local(:,itri) + geomterms%g*nrmfac(pdata(ipart)%sps)/4&
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)
-            if (ntime.eq.0) then
+            if (deposit_equilibrium) then
                coeffspai0_local(:,itri) = coeffspai0_local(:,itri) &
                     + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
                coeffspei0_local(:,itri) = coeffspei0_local(:,itri) &
@@ -3574,7 +3582,7 @@ subroutine particle_pressure_rhs
          else
             coeffsdef0_local(:,itri) = coeffsdef0_local(:,itri) + geomterms%g*nrmfac(pdata(ipart)%sps)/4&
                *(b0_norm/1e4)**2/(4*3.14159*1e-7)/(n0_norm*1e6)
-            if (ntime.eq.0) then
+            if (deposit_equilibrium) then
                coeffspaf0_local(:,itri) = coeffspaf0_local(:,itri) &
                     + ppar*geomterms%g*nrmfac(pdata(ipart)%sps)/4
                coeffspef0_local(:,itri) = coeffspef0_local(:,itri) &
@@ -3636,7 +3644,7 @@ subroutine particle_pressure_rhs
    coeffsdei = 0.; coeffsdei = 0.
 !   coeffsvpi = 0.
    coeffsjfpar = 0.
-   if (ntime.eq.0) then
+   if (deposit_equilibrium) then
       coeffspaf0 = 0.
       coeffspef0 = 0.
       coeffspai0 = 0.
@@ -3715,7 +3723,7 @@ subroutine particle_pressure_rhs
    deni_field(0)%vec = 0.
    denf_field(0)%vec = 0.
    j_f_par%vec = 0.
-   if (ntime.eq.0) then
+   if (deposit_equilibrium) then
       p_f_par(0)%vec = 0.
       p_f_perp(0)%vec = 0.
       p_i_par(0)%vec = 0.
@@ -3739,7 +3747,7 @@ subroutine particle_pressure_rhs
       call vector_insert_block(denf_field(1)%vec, ielm, 1, matmul(cl, coeffsdef(:, ielm_global)), VEC_ADD)
       call vector_insert_block(denf_field(0)%vec, ielm, 1, matmul(cl, coeffsdef0(:, ielm_global)), VEC_ADD)
       call vector_insert_block(j_f_par%vec, ielm, 1, matmul(cl, coeffsjfpar(:,ielm_global)), VEC_ADD)
-      if (ntime.eq.0) then
+      if (deposit_equilibrium) then
          dofspa0 = matmul(cl, coeffspaf0(:,ielm_global))
          dofspe0 = matmul(cl, coeffspef0(:,ielm_global))
          call vector_insert_block(p_f_par(0)%vec, ielm, 1, dofspa0, VEC_ADD)
@@ -3748,7 +3756,7 @@ subroutine particle_pressure_rhs
       call vector_insert_block(deni_field(1)%vec, ielm, 1, matmul(cl, coeffsdei(:, ielm_global)), VEC_ADD)
       call vector_insert_block(p_i_par(1)%vec, ielm, 1, matmul(cl, coeffspai(:, ielm_global)), VEC_ADD)
       call vector_insert_block(p_i_perp(1)%vec, ielm, 1, matmul(cl, coeffspei(:, ielm_global)), VEC_ADD)
-      if (ntime.eq.0) then
+      if (deposit_equilibrium) then
          dofspai0 = matmul(cl, coeffspai0(:,ielm_global))
          dofspei0 = matmul(cl, coeffspei0(:,ielm_global))
          call vector_insert_block(p_i_par(0)%vec, ielm, 1, dofspai0, VEC_ADD)
@@ -3767,6 +3775,9 @@ subroutine solve_pi_tensor
    use matrix_mod
    implicit none
    integer :: ierr
+   logical :: deposit_equilibrium
+
+   deposit_equilibrium = deposit_equilibrium_moments
 
    !call newvar_solve(p_f_par(1)%vec,  diff_mat)
    !call newvar_solve(p_f_perp(1)%vec,  diff_mat)
@@ -3785,7 +3796,7 @@ subroutine solve_pi_tensor
    call sum_shared(j_f_par%vec)
    call newsolve(diff2_mat, j_f_par%vec, ierr)
    if (kinetic_current.eq.1) nre_field(1) = j_f_par
-   if (ntime.eq.0) then
+   if (deposit_equilibrium) then
       call sum_shared(p_f_par(0)%vec)
       call newsolve(diff20_mat, p_f_par(0)%vec, ierr)
       call sum_shared(p_f_perp(0)%vec)
@@ -3798,7 +3809,7 @@ subroutine solve_pi_tensor
    call newsolve(diff2_mat, p_i_par(1)%vec, ierr)
    call sum_shared(p_i_perp(1)%vec)
    call newsolve(diff2_mat, p_i_perp(1)%vec, ierr)
-   if (ntime.eq.0) then
+   if (deposit_equilibrium) then
       call sum_shared(p_i_par(0)%vec)
       call newsolve(diff20_mat, p_i_par(0)%vec, ierr)
       call sum_shared(p_i_perp(0)%vec)
@@ -4038,10 +4049,11 @@ subroutine hdf5_read_particles(filename, ierr)
 
    integer, parameter :: chunksize = 1024 ! # of particles to read in one pass
    integer, parameter :: ldim = vspdims + 12 ! Leading dimension of particle data array
+   real, parameter :: restart_phi_deviation = 1.e-2
 
    type(particle) :: dpar
    real, dimension(:, :), allocatable :: valbuf
-   real :: tstart, tend
+   real :: tstart, tend, phi_offset
    real, dimension(3) :: mmsa
 #ifdef USE3D
    real xi, zi
@@ -4050,9 +4062,10 @@ subroutine hdf5_read_particles(filename, ierr)
    integer(HID_T) :: dset_id, filespace, memspace
    integer(HSIZE_T), dimension(2) :: pdims, pmaxdims, cdims, off_h5, off_m
    integer vsp_file, datarank, np, ipart
-   integer :: ielm, ielmold = 1, size, poffset, isghost
+   integer :: particles_in_file, replication_factor, icopy, pindex
+   integer :: ielm, ielm_copy, ielmold = 1, size, poffset, isghost
    integer :: info
-   logical :: pass = .false.
+   logical :: pass = .false., original_deleted
    integer :: ipart_begin_temp, ipart_end_temp
 
    locparts = 0
@@ -4122,16 +4135,33 @@ subroutine hdf5_read_particles(filename, ierr)
                      print *, 'Error ', ierr, &
                      ': dataspace has wrong dimensions in restart file!'
                else
-                  if (myrank .eq. 0) print *, pdims(2), ' particles in restart file.'
-                  nparticles = pdims(2)
+                  particles_in_file = int(pdims(2))
+                  if (myrank .eq. 0) print *, particles_in_file, ' particles in restart file.'
+                  if (particles_in_file.le.0) then
+                     if (myrank.eq.0) print *, 'Error: particle restart file is empty.'
+                     ierr = -1
+                     return
+                  endif
+                  if (particles_in_file.gt.num_par_max) then
+                     if (myrank.eq.0) print *, 'Error: num_par_max is smaller than the particle restart count.'
+                     ierr = -1
+                     return
+                  endif
+                  replication_factor = max(1, num_par_max/particles_in_file)
+                  nparticles = particles_in_file*replication_factor
+                  if ((myrank.eq.0).and.(replication_factor.gt.1)) then
+                     print *, 'Replicating each restart particle ', replication_factor, &
+                          ' times; new particle count = ', nparticles
+                  endif
+                  nrmfac = nrmfac/real(replication_factor)
                   call MPI_Comm_size(MPI_COMM_WORLD, size, ierr)
-                  np = int(nparticles/size) + 1
+                  np = int(particles_in_file/size) + 1
                   allocate (valbuf(ldim, np))
                   !call mpi_scan(locparts, poffset, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
                   !poffset = poffset - locparts
                   poffset = np*myrank
 
-                  if (poffset + np > nparticles) np = nparticles - poffset
+                  if (poffset + np > particles_in_file) np = particles_in_file - poffset
                   cdims(1) = ldim; cdims(2) = np
                   call h5screate_simple_f(2, cdims, memspace, ierr)
                   off_h5(1) = 0; off_h5(2) = poffset
@@ -4207,17 +4237,36 @@ subroutine hdf5_read_particles(filename, ierr)
                      dpar%kx(:, 4) = dpar%x
                      dpar%jel = ielm
                      dpar%kel(:) = ielm
+                     original_deleted = dpar%deleted
                      !if (dpar%gid==0.3*1e6) then
                      !   dpar%x(1)=0.9
                      !   dpar%x(2)=3.1415926/2.
                      !   dpar%x(3)=0
                      !endif
                      !call add_particle(pdata(ielm), dpar)
-                     pdata(ipart + poffset) = dpar
-                     locparts = locparts + 1
+                     do icopy = 1, replication_factor
+                        pindex = (poffset + ipart - 1)*replication_factor + icopy
+                        if (replication_factor.gt.1) then
+                           dpar%deleted = original_deleted
+                           phi_offset = restart_phi_deviation* &
+                                (2.*real(icopy - 1)/real(replication_factor - 1) - 1.)
+                           dpar%gid = pindex
+                           dpar%x(2) = modulo(valbuf(3, ipart) + phi_offset, toroidal_period)
+                           dpar%x0(2) = modulo(valbuf(11, ipart) + phi_offset, toroidal_period)
+                           dpar%kx(2, :) = dpar%x(2)
+                           if (.not.dpar%deleted) then
+                              call mesh_search(ielm, dpar%x, ielm_copy)
+                              dpar%deleted = (ielm_copy.le.0)
+                              dpar%jel = ielm_copy
+                              dpar%kel(:) = ielm_copy
+                           endif
+                        endif
+                        pdata(pindex) = dpar
+                     enddo
+                     locparts = locparts + replication_factor
                   end do
-                  ipart_begin = poffset + 1
-                  ipart_end = poffset + np
+                  ipart_begin = poffset*replication_factor + 1
+                  ipart_end = (poffset + np)*replication_factor
                   !np = np - chunksize
                   !if (np.lt.pdims(2)-10) exit !TMP!!!
                   !enddo !while

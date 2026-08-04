@@ -2,6 +2,7 @@ module restart_hdf5
   implicit none
 
   integer, private :: icomplex_in, eqsubtract_in, extsubtract_in, ifin, nplanes_in
+  integer, private :: ntor_in
   integer, private :: ikprad_in, kprad_z_in, ipellet_in
   real, private, allocatable :: phi_in(:)
   real, private :: toroidal_period_in
@@ -76,6 +77,12 @@ contains
     call read_int_attr(root_id, "extsubtract", extsubtract_in, error)
     call read_int_attr(root_id, "icomplex", icomplex_in, error)
     call read_int_attr(root_id, "3d", i3d_in, error)
+    if(icomplex_in.eq.1) then
+       call read_int_attr(root_id, "ntor", ntor_in, error)
+       if(myrank.eq.0) print *, 'Complex restart toroidal mode ntor = ', ntor_in
+    else
+       ntor_in = 0
+    endif
 
     call h5gopen_f(time_id, "mesh", mesh_id, error)
     call read_int_attr(mesh_id, "nplanes", nplanes_in, error)
@@ -323,8 +330,17 @@ contains
        istartnew = 1
     end if
     if(nplanes_in.eq.1 .and. nplanes.gt.1) then
+       if(icomplex_in.eq.1 .and. ifull_torus.eq.0 .and. &
+            mod(abs(ntor_in),nperiods).ne.0) then
+          if(myrank.eq.0) then
+             print *, "Error: complex restart ntor must be divisible by nperiods"
+             print *, "ntor = ", ntor_in, ", nperiods = ", nperiods
+          endif
+          call safestop(44)
+       endif
        if(myrank.eq.0) then
           print *, 'Starting 3D calculation from 2D calculation.'
+          if(icomplex_in.eq.1) print *, 'Expanding complex mode as Re[F exp(i*ntor*phi)], ntor = ', ntor_in
           print *, 'Previous data will be overwritten.'
        end if
        istartnew = 1
@@ -394,24 +410,30 @@ contains
 
     integer(HID_T) :: group_id
     integer :: nelms, ilin, i
+    logical :: perturbed
     character(len=64) :: field_name
 
     ilin = 1 - equilibrium
     error = 0
+    perturbed = (ilin.eq.1 .and. eqsubtract_in.eq.1)
 
     nelms = local_elements()
 
     call h5gopen_f(time_group_id, "fields", group_id, error)
 
-    call h5r_read_field(group_id, "I",    bz_field(ilin), nelms, error)
-
-    call h5r_read_field(group_id, "phi",   u_field(ilin), nelms, error)
+    call h5r_read_field(group_id, "I", bz_field(ilin), nelms, error, &
+         isperturbed=perturbed)
+    call h5r_read_field(group_id, "phi", u_field(ilin), nelms, error, &
+         isperturbed=perturbed)
 !    call m3dc1_field_write(u_field(ilin)%vec%id, "phi-r", 0)
 
-    call h5r_read_field(group_id, "V",    vz_field(ilin), nelms, error)
-    call h5r_read_field(group_id, "chi", chi_field(ilin), nelms, error)
+    call h5r_read_field(group_id, "V", vz_field(ilin), nelms, error, &
+         isperturbed=perturbed)
+    call h5r_read_field(group_id, "chi", chi_field(ilin), nelms, error, &
+         isperturbed=perturbed)
     if(irunaway.gt.0) then
-      call h5r_read_field(group_id, "nre", nre_field(ilin), nelms, error)
+       call h5r_read_field(group_id, "nre", nre_field(ilin), nelms, error, &
+            isperturbed=perturbed)
     endif
 
     if(icsubtract.eq.1) then
@@ -420,26 +442,34 @@ contains
     
     if(icsubtract.eq.1 .or. &
          (extsubtract_in.eq.1 .and. (ilin.eq.1 .or. eqsubtract_in.eq.0))) then
-       call h5r_read_field(group_id, "psi_plasma", psi_field(ilin), nelms, error)
+       call h5r_read_field(group_id, "psi_plasma", psi_field(ilin), nelms, &
+            error, isperturbed=perturbed)
     else
-       call h5r_read_field(group_id, "psi", psi_field(ilin), nelms, error)
+       call h5r_read_field(group_id, "psi", psi_field(ilin), nelms, error, &
+            isperturbed=perturbed)
     end if
 
     if(extsubtract_in.eq.1 .and. (ilin.eq.1 .or. eqsubtract_in.eq.0)) then
-       call h5r_read_field(group_id, "I_plasma", bz_field(ilin), nelms, error)
+       call h5r_read_field(group_id, "I_plasma", bz_field(ilin), nelms, &
+            error, isperturbed=perturbed)
        if(ifin.eq.1) then
-          call h5r_read_field(group_id, "f_plasma", bf_field(ilin), nelms, error)
+          call h5r_read_field(group_id, "f_plasma", bf_field(ilin), nelms, &
+               error, isperturbed=perturbed)
        end if
        if(irestart_fp.eq.1) then
-          call h5r_read_field(group_id, "fp_plasma", bfp_field(ilin), nelms, error)
+          call h5r_read_field(group_id, "fp_plasma", bfp_field(ilin), nelms, &
+               error, isperturbed=perturbed)
        end if
     else
-       call h5r_read_field(group_id, "I", bz_field(ilin), nelms, error)
+       call h5r_read_field(group_id, "I", bz_field(ilin), nelms, error, &
+            isperturbed=perturbed)
        if(ifin.eq.1) then
-          call h5r_read_field(group_id, "f", bf_field(ilin), nelms, error)
+          call h5r_read_field(group_id, "f", bf_field(ilin), nelms, error, &
+               isperturbed=perturbed)
        end if
        if(irestart_fp.eq.1) then
-          call h5r_read_field(group_id, "fp", bfp_field(ilin), nelms, error)
+          call h5r_read_field(group_id, "fp", bfp_field(ilin), nelms, error, &
+               isperturbed=perturbed)
        end if
     end if
 
@@ -453,32 +483,45 @@ contains
     end if
 
     if(jadv.eq.0) then
-       call h5r_read_field(group_id, "potential", e_field(ilin), nelms, error)
+       call h5r_read_field(group_id, "potential", e_field(ilin), nelms, &
+            error, isperturbed=perturbed)
     endif
 
-    call h5r_read_field(group_id, "P",   p_field(ilin),   nelms, error)
-    call h5r_read_field(group_id, "Pe",  pe_field(ilin),  nelms, error)
-    call h5r_read_field(group_id, "den", den_field(ilin), nelms, error)
-    call h5r_read_field(group_id, "ne",  ne_field(ilin),  nelms, error)
-    call h5r_read_field(group_id, "te",  te_field(ilin),  nelms, error)
-    call h5r_read_field(group_id, "ti",  ti_field(ilin),  nelms, error)
+    call h5r_read_field(group_id, "P", p_field(ilin), nelms, error, &
+         isperturbed=perturbed)
+    call h5r_read_field(group_id, "Pe", pe_field(ilin), nelms, error, &
+         isperturbed=perturbed)
+    call h5r_read_field(group_id, "den", den_field(ilin), nelms, error, &
+         isperturbed=perturbed)
+    call h5r_read_field(group_id, "ne", ne_field(ilin), nelms, error, &
+         isperturbed=perturbed)
+    call h5r_read_field(group_id, "te", te_field(ilin), nelms, error, &
+         isperturbed=perturbed)
+    call h5r_read_field(group_id, "ti", ti_field(ilin), nelms, error, &
+         isperturbed=perturbed)
 
 #ifdef USEPARTICLES
-    call h5r_read_field(group_id, "rhof", rho_field, nelms, error)
+    call h5r_read_field(group_id, "rhof", rho_field, nelms, error, .true.)
     if ((kinetic.eq.1).or.(irunaway_kinetic.eq.1)) then
-       call h5r_read_field(group_id, "p_f_par",  p_f_par(ilin), nelms, error)
-       call h5r_read_field(group_id, "p_f_perp", p_f_perp(ilin), nelms, error)
-       call h5r_read_field(group_id, "denf", denf_field(ilin), nelms, error)
-       call h5r_read_field(group_id, "p_i_par", p_i_par(ilin), nelms, error)
-       call h5r_read_field(group_id, "p_i_perp", p_i_perp(ilin), nelms, error)
-       call h5r_read_field(group_id, "deni", deni_field(ilin), nelms, error)
+       call h5r_read_field(group_id, "p_f_par", p_f_par(ilin), nelms, &
+            error, isperturbed=perturbed)
+       call h5r_read_field(group_id, "p_f_perp", p_f_perp(ilin), nelms, &
+            error, isperturbed=perturbed)
+       call h5r_read_field(group_id, "denf", denf_field(ilin), nelms, &
+            error, isperturbed=perturbed)
+       call h5r_read_field(group_id, "p_i_par", p_i_par(ilin), nelms, &
+            error, isperturbed=perturbed)
+       call h5r_read_field(group_id, "p_i_perp", p_i_perp(ilin), nelms, &
+            error, isperturbed=perturbed)
+       call h5r_read_field(group_id, "deni", deni_field(ilin), nelms, &
+            error, isperturbed=perturbed)
     endif
     if (((kinetic.eq.1).or.(irunaway_kinetic.eq.1)).and.(ilin.eq.1)) then
-       call h5r_read_field(group_id, "nf",   nf_field, nelms, error)
-       call h5r_read_field(group_id, "tf",   tf_field, nelms, error)
+       call h5r_read_field(group_id, "nf",   nf_field, nelms, error, .true.)
+       call h5r_read_field(group_id, "tf",   tf_field, nelms, error, .true.)
        ! den_field(1)=0.
-       call h5r_read_field(group_id, "nfi",  nfi_field, nelms, error)
-       call h5r_read_field(group_id, "tfi",  tfi_field, nelms, error)
+       call h5r_read_field(group_id, "nfi",  nfi_field, nelms, error, .true.)
+       call h5r_read_field(group_id, "tfi",  tfi_field, nelms, error, .true.)
     endif
 #endif
 
@@ -507,7 +550,7 @@ contains
 
   end subroutine read_fields
 
-  subroutine h5r_read_field(group_id, name, f, nelms, error, isreal)
+  subroutine h5r_read_field(group_id, name, f, nelms, error, isreal, isperturbed)
     use basic
     use hdf5
     use field
@@ -522,15 +565,19 @@ contains
     integer, intent(in) :: nelms
     integer, intent(out) :: error
     logical, intent(in), optional :: isreal
+    logical, intent(in), optional :: isperturbed
 
     real, dimension(coeffs_per_element,nelms) :: dum
+    real, dimension(coeffs_per_element,nelms) :: dum_i
     vectype, dimension(coeffs_per_element,nelms) :: zdum
     vectype, dimension(coeffs_per_element) :: kdum
     integer :: i, coefs
-    logical :: ir
+    logical :: ir, pert
     integer :: new_plane, old_plane, plane_fac, k
+    integer :: global_elm, next_plane
     integer :: offset_in, global_elms_in
     real :: dphi, shift, phi_new
+    real :: phi_left, phi_right
     logical :: transform
 !    vectype, dimension(dofs_per_element, dofs_per_element) :: trans_mat
 
@@ -541,6 +588,12 @@ contains
     else
        ir = .false.
     end if
+
+    if(present(isperturbed)) then
+       pert = isperturbed
+    else
+       pert = .false.
+    endif
 
     error = 0
 
@@ -587,28 +640,95 @@ contains
        transform = .false.
     end if
 
+    dum_i = 0.
+
     call read_field(group_id, name, dum(1:coefs,:), coefs, nelms, &
          offset_in, global_elms_in, error)
     zdum = dum
     if(icomplex_in.eq.1 .and. .not.ir) then
-       call read_field(group_id,name//"_i", dum(1:coefs,:), coefs, nelms, &
+       call read_field(group_id,name//"_i", dum_i(1:coefs,:), coefs, nelms, &
             offset_in, global_elms_in, error)
 #ifdef USECOMPLEX
-       zdum = zdum + (0.,1.)*dum
+       zdum = zdum + (0.,1.)*dum_i
 #endif
     end if
     f = 0.
 
     do i=1, nelms
-       if(transform) then
-          call transform_coeffs_nplanes(zdum(:,i),shift,kdum)
+#ifdef USE3D
+       if(pert .and. nplanes_in.eq.1 .and. &
+            icomplex_in.eq.1 .and. nplanes.gt.1 .and. .not.ir) then
+          global_elm = offset_elms + i - 1
+          new_plane = global_elm/elms_per_plane
+          next_plane = modulo(new_plane + 1, nplanes)
+          call m3dc1_plane_getphi(new_plane, phi_left)
+          call m3dc1_plane_getphi(next_plane, phi_right)
+          if(next_plane.eq.0) phi_right = phi_right + toroidal_period
+          call complex_mode_to_3d_coeffs(dum(1:coeffs_per_tri,i), &
+               dum_i(1:coeffs_per_tri,i), &
+               phi_left, phi_right, kdum)
           call setavector(i, f, kdum)
        else
-          call setavector(i, f, zdum(:,i))
-       end if
+#endif
+          if(transform) then
+             call transform_coeffs_nplanes(zdum(:,i),shift,kdum)
+             call setavector(i, f, kdum)
+          else
+             call setavector(i, f, zdum(:,i))
+          end if
+#ifdef USE3D
+       endif
+#endif
     end do
     
   end subroutine h5r_read_field
+
+#ifdef USE3D
+  subroutine complex_mode_to_3d_coeffs(coeff_r, coeff_i, phi_left, phi_right, coeff_3d)
+    use basic
+    use element
+    implicit none
+
+    real, intent(in), dimension(coeffs_per_tri) :: coeff_r, coeff_i
+    real, intent(in) :: phi_left, phi_right
+    vectype, intent(out), dimension(coeffs_per_element) :: coeff_3d
+
+    integer :: i, j1, j2, j3, j4
+    real :: mode_k, phase_left, phase_right, dphi
+    real :: value_left, value_right, deriv_left, deriv_right
+
+    mode_k = real(ntor_in)
+    if(itor.eq.0) mode_k = mode_k/rzero
+    phase_left = mode_k*phi_left
+    phase_right = mode_k*phi_right
+    dphi = phi_right - phi_left
+
+    if(dphi.le.0.) then
+       if(myrank.eq.0) print *, 'Error: non-positive toroidal element width during complex restart.'
+       call safestop(43)
+    endif
+
+    coeff_3d = 0.
+    do i=1, coeffs_per_tri
+       value_left = coeff_r(i)*cos(phase_left) - coeff_i(i)*sin(phase_left)
+       value_right = coeff_r(i)*cos(phase_right) - coeff_i(i)*sin(phase_right)
+       deriv_left = -mode_k*(coeff_r(i)*sin(phase_left) + coeff_i(i)*cos(phase_left))
+       deriv_right = -mode_k*(coeff_r(i)*sin(phase_right) + coeff_i(i)*cos(phase_right))
+
+       j1 = i
+       j2 = i + coeffs_per_tri
+       j3 = i + 2*coeffs_per_tri
+       j4 = i + 3*coeffs_per_tri
+       coeff_3d(j1) = value_left
+       coeff_3d(j2) = deriv_left
+       coeff_3d(j3) = (3.*(value_right - value_left) &
+            - dphi*(2.*deriv_left + deriv_right))/dphi**2
+       coeff_3d(j4) = (2.*(value_left - value_right) &
+            + dphi*(deriv_left + deriv_right))/dphi**3
+    enddo
+  end subroutine complex_mode_to_3d_coeffs
+#endif
+
 
   subroutine find_plane_and_shift(nplanes_old, phi_old, phi_new, iplane, shift)
     use mesh_mod

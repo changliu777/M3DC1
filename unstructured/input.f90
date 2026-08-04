@@ -1272,6 +1272,8 @@ subroutine set_defaults
        "1: Enable fast ion PIC", particle_grp)
   call add_var_int("kinetic_thermal_ion", kinetic_thermal_ion, 0, &
        "1: Enable thermal ion PIC and density coupling between MHD and PIC", particle_grp)
+  call add_var_int("irestart_particle", irestart_particle, 0, &
+       "0: Initialize particle markers. 1: Read ions_*.h5", particle_grp)
   call add_var_int("igyroaverage", igyroaverage, 0, &
        "1: Enable gyro-averaging for PIC simulation", particle_grp)
   call add_var_int("particle_linear", particle_linear, -1, &
@@ -1772,6 +1774,11 @@ subroutine validate_input
   endif
 
 #ifdef USEPARTICLES
+  if((irestart_particle.ne.0).and.(irestart_particle.ne.1)) then
+     print *,"Error: irestart_particle must be 0 or 1."
+     call safestop(1)
+  endif
+
   if((kinetic_current.eq.1).and. &
        ((kinetic.ne.1).or.(kinetic_fast_ion.ne.1))) then
      print *,'Error: kinetic_current=1 requires kinetic=1 and kinetic_fast_ion=1.'

@@ -410,30 +410,24 @@ contains
 
     integer(HID_T) :: group_id
     integer :: nelms, ilin, i
-    logical :: perturbed
     character(len=64) :: field_name
 
     ilin = 1 - equilibrium
     error = 0
-    perturbed = (ilin.eq.1 .and. eqsubtract_in.eq.1)
 
     nelms = local_elements()
 
     call h5gopen_f(time_group_id, "fields", group_id, error)
 
-    call h5r_read_field(group_id, "I", bz_field(ilin), nelms, error, &
-         isperturbed=perturbed)
-    call h5r_read_field(group_id, "phi", u_field(ilin), nelms, error, &
-         isperturbed=perturbed)
+    call h5r_read_field(group_id, "I",    bz_field(ilin), nelms, error)
+
+    call h5r_read_field(group_id, "phi",   u_field(ilin), nelms, error)
 !    call m3dc1_field_write(u_field(ilin)%vec%id, "phi-r", 0)
 
-    call h5r_read_field(group_id, "V", vz_field(ilin), nelms, error, &
-         isperturbed=perturbed)
-    call h5r_read_field(group_id, "chi", chi_field(ilin), nelms, error, &
-         isperturbed=perturbed)
+    call h5r_read_field(group_id, "V",    vz_field(ilin), nelms, error)
+    call h5r_read_field(group_id, "chi", chi_field(ilin), nelms, error)
     if(irunaway.gt.0) then
-       call h5r_read_field(group_id, "nre", nre_field(ilin), nelms, error, &
-            isperturbed=perturbed)
+      call h5r_read_field(group_id, "nre", nre_field(ilin), nelms, error)
     endif
 
     if(icsubtract.eq.1) then
@@ -442,34 +436,26 @@ contains
     
     if(icsubtract.eq.1 .or. &
          (extsubtract_in.eq.1 .and. (ilin.eq.1 .or. eqsubtract_in.eq.0))) then
-       call h5r_read_field(group_id, "psi_plasma", psi_field(ilin), nelms, &
-            error, isperturbed=perturbed)
+       call h5r_read_field(group_id, "psi_plasma", psi_field(ilin), nelms, error)
     else
-       call h5r_read_field(group_id, "psi", psi_field(ilin), nelms, error, &
-            isperturbed=perturbed)
+       call h5r_read_field(group_id, "psi", psi_field(ilin), nelms, error)
     end if
 
     if(extsubtract_in.eq.1 .and. (ilin.eq.1 .or. eqsubtract_in.eq.0)) then
-       call h5r_read_field(group_id, "I_plasma", bz_field(ilin), nelms, &
-            error, isperturbed=perturbed)
+       call h5r_read_field(group_id, "I_plasma", bz_field(ilin), nelms, error)
        if(ifin.eq.1) then
-          call h5r_read_field(group_id, "f_plasma", bf_field(ilin), nelms, &
-               error, isperturbed=perturbed)
+          call h5r_read_field(group_id, "f_plasma", bf_field(ilin), nelms, error)
        end if
        if(irestart_fp.eq.1) then
-          call h5r_read_field(group_id, "fp_plasma", bfp_field(ilin), nelms, &
-               error, isperturbed=perturbed)
+          call h5r_read_field(group_id, "fp_plasma", bfp_field(ilin), nelms, error)
        end if
     else
-       call h5r_read_field(group_id, "I", bz_field(ilin), nelms, error, &
-            isperturbed=perturbed)
+       call h5r_read_field(group_id, "I", bz_field(ilin), nelms, error)
        if(ifin.eq.1) then
-          call h5r_read_field(group_id, "f", bf_field(ilin), nelms, error, &
-               isperturbed=perturbed)
+          call h5r_read_field(group_id, "f", bf_field(ilin), nelms, error)
        end if
        if(irestart_fp.eq.1) then
-          call h5r_read_field(group_id, "fp", bfp_field(ilin), nelms, error, &
-               isperturbed=perturbed)
+          call h5r_read_field(group_id, "fp", bfp_field(ilin), nelms, error)
        end if
     end if
 
@@ -483,38 +469,25 @@ contains
     end if
 
     if(jadv.eq.0) then
-       call h5r_read_field(group_id, "potential", e_field(ilin), nelms, &
-            error, isperturbed=perturbed)
+       call h5r_read_field(group_id, "potential", e_field(ilin), nelms, error)
     endif
 
-    call h5r_read_field(group_id, "P", p_field(ilin), nelms, error, &
-         isperturbed=perturbed)
-    call h5r_read_field(group_id, "Pe", pe_field(ilin), nelms, error, &
-         isperturbed=perturbed)
-    call h5r_read_field(group_id, "den", den_field(ilin), nelms, error, &
-         isperturbed=perturbed)
-    call h5r_read_field(group_id, "ne", ne_field(ilin), nelms, error, &
-         isperturbed=perturbed)
-    call h5r_read_field(group_id, "te", te_field(ilin), nelms, error, &
-         isperturbed=perturbed)
-    call h5r_read_field(group_id, "ti", ti_field(ilin), nelms, error, &
-         isperturbed=perturbed)
+    call h5r_read_field(group_id, "P",   p_field(ilin),   nelms, error)
+    call h5r_read_field(group_id, "Pe",  pe_field(ilin),  nelms, error)
+    call h5r_read_field(group_id, "den", den_field(ilin), nelms, error)
+    call h5r_read_field(group_id, "ne",  ne_field(ilin),  nelms, error)
+    call h5r_read_field(group_id, "te",  te_field(ilin),  nelms, error)
+    call h5r_read_field(group_id, "ti",  ti_field(ilin),  nelms, error)
 
 #ifdef USEPARTICLES
     call h5r_read_field(group_id, "rhof", rho_field, nelms, error, .true.)
     if ((kinetic.eq.1).or.(irunaway_kinetic.eq.1)) then
-       call h5r_read_field(group_id, "p_f_par", p_f_par(ilin), nelms, &
-            error, isperturbed=perturbed)
-       call h5r_read_field(group_id, "p_f_perp", p_f_perp(ilin), nelms, &
-            error, isperturbed=perturbed)
-       call h5r_read_field(group_id, "denf", denf_field(ilin), nelms, &
-            error, isperturbed=perturbed)
-       call h5r_read_field(group_id, "p_i_par", p_i_par(ilin), nelms, &
-            error, isperturbed=perturbed)
-       call h5r_read_field(group_id, "p_i_perp", p_i_perp(ilin), nelms, &
-            error, isperturbed=perturbed)
-       call h5r_read_field(group_id, "deni", deni_field(ilin), nelms, &
-            error, isperturbed=perturbed)
+       call h5r_read_field(group_id, "p_f_par",  p_f_par(ilin), nelms, error)
+       call h5r_read_field(group_id, "p_f_perp", p_f_perp(ilin), nelms, error)
+       call h5r_read_field(group_id, "denf", denf_field(ilin), nelms, error)
+       call h5r_read_field(group_id, "p_i_par", p_i_par(ilin), nelms, error)
+       call h5r_read_field(group_id, "p_i_perp", p_i_perp(ilin), nelms, error)
+       call h5r_read_field(group_id, "deni", deni_field(ilin), nelms, error)
     endif
     if (((kinetic.eq.1).or.(irunaway_kinetic.eq.1)).and.(ilin.eq.1)) then
        call h5r_read_field(group_id, "nf",   nf_field, nelms, error, .true.)
@@ -550,12 +523,13 @@ contains
 
   end subroutine read_fields
 
-  subroutine h5r_read_field(group_id, name, f, nelms, error, isreal, isperturbed)
+  subroutine h5r_read_field(group_id, name, f, nelms, error, isreal)
     use basic
     use hdf5
     use field
     use hdf5_output
     use mesh_mod
+    use arrays
 
     implicit none
 
@@ -565,7 +539,6 @@ contains
     integer, intent(in) :: nelms
     integer, intent(out) :: error
     logical, intent(in), optional :: isreal
-    logical, intent(in), optional :: isperturbed
 
     real, dimension(coeffs_per_element,nelms) :: dum
     real, dimension(coeffs_per_element,nelms) :: dum_i
@@ -589,10 +562,27 @@ contains
        ir = .false.
     end if
 
-    if(present(isperturbed)) then
-       pert = isperturbed
-    else
-       pert = .false.
+    pert = associated(f%vec, field_vec)
+    if(.not.pert) then
+       pert = (associated(f%vec, bf_field(1)%vec) .and. &
+            f%index.eq.bf_field(1)%index) .or. &
+            (associated(f%vec, bfp_field(1)%vec) .and. &
+            f%index.eq.bfp_field(1)%index)
+#ifdef USEPARTICLES
+       pert = pert .or. &
+            (associated(f%vec, p_f_par(1)%vec) .and. &
+            f%index.eq.p_f_par(1)%index) .or. &
+            (associated(f%vec, p_f_perp(1)%vec) .and. &
+            f%index.eq.p_f_perp(1)%index) .or. &
+            (associated(f%vec, denf_field(1)%vec) .and. &
+            f%index.eq.denf_field(1)%index) .or. &
+            (associated(f%vec, p_i_par(1)%vec) .and. &
+            f%index.eq.p_i_par(1)%index) .or. &
+            (associated(f%vec, p_i_perp(1)%vec) .and. &
+            f%index.eq.p_i_perp(1)%index) .or. &
+            (associated(f%vec, deni_field(1)%vec) .and. &
+            f%index.eq.deni_field(1)%index)
+#endif
     endif
 
     error = 0
@@ -656,8 +646,9 @@ contains
 
     do i=1, nelms
 #ifdef USE3D
-       if(pert .and. nplanes_in.eq.1 .and. &
-            icomplex_in.eq.1 .and. nplanes.gt.1 .and. .not.ir) then
+       if(pert .and. eqsubtract_in.eq.1 .and. &
+            nplanes_in.eq.1 .and. icomplex_in.eq.1 .and. &
+            nplanes.gt.1 .and. .not.ir) then
           global_elm = offset_elms + i - 1
           new_plane = global_elm/elms_per_plane
           next_plane = modulo(new_plane + 1, nplanes)

@@ -387,6 +387,7 @@ subroutine define_profiles
   integer :: nvals, i, ierr
   type(spline1d) :: fpol_spline, bscale_spline, pscale_spline
   real :: fval, fpval
+  logical :: file_exists
 
   if(myrank.eq.0 .and. iprint.ge.1) print *, 'Defining profiles'
 
@@ -618,16 +619,23 @@ subroutine define_profiles
 #ifdef USEPARTICLES
   if ((kinetic.eq.1).and.(kinetic_fast_ion.eq.1)) then
      nvals = 0
-     call read_ascii_column('profile_tf_rho', xvals, nvals, icol=1)
-     call read_ascii_column('profile_tf_rho', yvals, nvals, icol=2)
-     if(nvals.eq.0) call safestop(5)
-     xvals = xvals / xvals(nvals) ! normalize rho
-     !yvals=yvals*0.25
-     if (allocated(psi_spline%y)) then
-        call rho_to_psi(nvals, xvals, xvals)
+     inquire(file='profile_tf_rho', exist=file_exists)
+     if (file_exists) then
+        call read_ascii_column('profile_tf_rho', xvals, nvals, icol=1)
+        call read_ascii_column('profile_tf_rho', yvals, nvals, icol=2)
+        if(nvals.eq.0) call safestop(5)
+        xvals = xvals / xvals(nvals) ! normalize rho
+        if (allocated(psi_spline%y)) then
+           call rho_to_psi(nvals, xvals, xvals)
+        else
+           xvals=xvals**2
+        endif
      else
-        xvals=xvals**2
+        ! profile_tf is tabulated directly versus normalized poloidal flux.
+        call read_ascii_column('profile_tf', xvals, nvals, icol=1)
+        call read_ascii_column('profile_tf', yvals, nvals, icol=2)
      endif
+     if(nvals.eq.0) call safestop(5)
      if(allocated(yvals)) then
         call create_spline(tf_spline, nvals, xvals, yvals)
         deallocate(xvals, yvals)
@@ -651,16 +659,24 @@ subroutine define_profiles
 
   if ((kinetic.eq.1).and.(kinetic_fast_ion.eq.1)) then
      nvals = 0
-     call read_ascii_column('profile_nf_rho', xvals, nvals, icol=1)
-     call read_ascii_column('profile_nf_rho', yvals, nvals, icol=2)
+     inquire(file='profile_nf_rho', exist=file_exists)
+     if (file_exists) then
+        call read_ascii_column('profile_nf_rho', xvals, nvals, icol=1)
+        call read_ascii_column('profile_nf_rho', yvals, nvals, icol=2)
+        if(nvals.eq.0) call safestop(5)
+        xvals = xvals / xvals(nvals) ! normalize rho
+        if (allocated(psi_spline%y)) then
+           call rho_to_psi(nvals, xvals, xvals)
+        else
+           xvals=xvals**2
+        endif
+     else
+        ! profile_nf is tabulated directly versus normalized poloidal flux.
+        call read_ascii_column('profile_nf', xvals, nvals, icol=1)
+        call read_ascii_column('profile_nf', yvals, nvals, icol=2)
+     endif
      if(nvals.eq.0) call safestop(5)
      yvals = yvals / n0_norm !rsae
-     xvals = xvals / xvals(nvals) ! normalize rho
-     if (allocated(psi_spline%y)) then
-        call rho_to_psi(nvals, xvals, xvals)
-     else
-        xvals=xvals**2
-     endif
      if(allocated(yvals)) then
         call create_spline(nf_spline, nvals, xvals, yvals)
         deallocate(xvals, yvals)
@@ -669,16 +685,25 @@ subroutine define_profiles
 
   if ((kinetic.eq.1).and.(kinetic_thermal_ion.eq.1)) then
      nvals = 0
-     call read_ascii_column('profile_ti_rho', xvals, nvals, icol=1)
-     call read_ascii_column('profile_ti_rho', yvals, nvals, icol=2)
-     if(nvals.eq.0) call safestop(5)
-     xvals = xvals / xvals(nvals) ! normalize rho
-     ! yvals=yvals*0.5
-     if (allocated(psi_spline%y)) then
-        call rho_to_psi(nvals, xvals, xvals)
+     inquire(file='profile_ti_rho', exist=file_exists)
+     if (file_exists) then
+        call read_ascii_column('profile_ti_rho', xvals, nvals, icol=1)
+        call read_ascii_column('profile_ti_rho', yvals, nvals, icol=2)
+        if(nvals.eq.0) call safestop(5)
+        xvals = xvals / xvals(nvals) ! normalize rho
+        ! yvals=yvals*0.5
+        if (allocated(psi_spline%y)) then
+           call rho_to_psi(nvals, xvals, xvals)
+        else
+           xvals=xvals**2
+        endif
      else
-        xvals=xvals**2
+        ! profile_ti is tabulated directly versus normalized poloidal flux;
+        ! its first column must not be converted from rho.
+        call read_ascii_column('profile_ti', xvals, nvals, icol=1)
+        call read_ascii_column('profile_ti', yvals, nvals, icol=2)
      endif
+     if(nvals.eq.0) call safestop(5)
      if(allocated(yvals)) then
         call create_spline(tfi_spline, nvals, xvals, yvals)
         deallocate(xvals, yvals)
@@ -687,16 +712,27 @@ subroutine define_profiles
   
   if ((kinetic.eq.1).and.(kinetic_thermal_ion.eq.1)) then
      nvals = 0
-     call read_ascii_column('profile_ni_rho', xvals, nvals, icol=1)
-     call read_ascii_column('profile_ni_rho', yvals, nvals, icol=2)
+     inquire(file='profile_ni_rho', exist=file_exists)
+     if (file_exists) then
+        call read_ascii_column('profile_ni_rho', xvals, nvals, icol=1)
+        call read_ascii_column('profile_ni_rho', yvals, nvals, icol=2)
+        if(nvals.eq.0) call safestop(5)
+        xvals = xvals / xvals(nvals) ! normalize rho
+        if (allocated(psi_spline%y)) then
+           call rho_to_psi(nvals, xvals, xvals)
+        else
+           xvals=xvals**2
+        endif
+     else
+        ! profile_ni is tabulated directly versus normalized poloidal flux;
+        ! unlike profile_ni_rho, its first column must not be converted.
+        ! If it is absent, read_ascii_column leaves nvals=0 and the
+        ! check below stops the run.
+        call read_ascii_column('profile_ni', xvals, nvals, icol=1)
+        call read_ascii_column('profile_ni', yvals, nvals, icol=2)
+     endif
      if(nvals.eq.0) call safestop(5)
      yvals = yvals / n0_norm !rsae
-     xvals = xvals / xvals(nvals) ! normalize rho
-     if (allocated(psi_spline%y)) then
-        call rho_to_psi(nvals, xvals, xvals)
-     else
-        xvals=xvals**2
-     endif
      if(allocated(yvals)) then
         call create_spline(nfi_spline, nvals, xvals, yvals)
         deallocate(xvals, yvals)
@@ -1467,7 +1503,7 @@ endif
   if(myrank.eq.0 .and. iprint.ge.2) print *, '  solving...'
 
   call newvar_solve(b1vecini_vec%vec,mass_mat_lhs)
-  !call mult(b1vecini_vec, 0.5)
+  !call mult(b1vecini_vec, 1.1)
 
   p_field(0) = b1vecini_vec
 

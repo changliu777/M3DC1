@@ -5,6 +5,7 @@
 - Keep Python file/function structure close to IDL call structure (1-to-1 where practical).
 
 ## User Preferences (Persistent)
+- Keep simulation-specific job, monitoring, and scan scripts in the simulation run directory; do not add them to the reusable `m3dc1` package.
 - Use Homebrew Python 3.14 for commands:
   - `/opt/homebrew/bin/python3.14`
 - Implement module-style code only:
@@ -35,6 +36,9 @@
 ## Global Migration Rules
 - Preserve IDL-style logging/print behavior across all migrated files.
 - This rule applies to all future IDL-to-Python migration work in this repository unless explicitly overridden by the user.
+- `extract_profiles.py` remains importable and also supports direct execution as
+  `python3 m3dc1/extract_profiles.py <profile_file>`, writing profiles to the
+  caller's current directory.
 
 ## read_field / eval_field Notes
 - `eval_field.py` is currently Numba-based (`njit` + `prange`) for element-loop acceleration.
@@ -244,6 +248,8 @@
   - When `mesh=True`, overlay toroidal plane locations from `mesh.attrs["phi"]`.
 - `eval_field.py` / 3D toroidal mesh behavior:
   - When selecting 3D toroidal mesh slabs, use a small `dphi`-relative tolerance and clamp boundary-local `phi` values so exact plane-boundary angles such as `phi=30` do not reject both adjacent slabs.
+- `read_mesh.py` compatibility:
+  - Old HDF5 files may omit `mesh.attrs["nperiods"]`; default `MeshData.nperiods` to `1` when the attribute is absent.
 - `read_field_ntor.py` / `plot_field_ntor.py` conventions:
   - `read_field_ntor.py` returns toroidal Fourier components on the original 2D `(r, z)` grid without flux-coordinate remapping and without a poloidal (`m`) Fourier transform.
   - `read_field_ntor.py` only supports files with `3d=1`; otherwise it should raise an error.

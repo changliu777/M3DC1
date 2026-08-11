@@ -93,8 +93,8 @@ module runaway_advection
    integer :: nelms, nelms_global, nnodes_global
    real :: toroidal_period_particle
 !$acc declare create(toroidal_period_particle)
-   real :: gamma_re = 20
-   real :: xi2_re = 0.99
+   real :: gamma_re = 1
+   real :: xi2_re = 0.9999
    real :: q_re = -1.60217662e-19
    real :: m_re = 9.10938356e-31
    real :: qm_re
@@ -891,7 +891,8 @@ subroutine fdot(x, v, w, dxdt, dvdt, dwdt, dEpdt, itri, ierr)
    !ierr = 0
 
    !Need terms to compute fields to calculate acceleration
-   call get_geom_terms(x, itri, geomterms, .false., ierr)
+   !call get_geom_terms(x, itri, geomterms, .false., ierr)
+   call get_geom_terms(x, itri, geomterms, .true., ierr)
    if (ierr .eq. 0) then
       if (mesh_zone(itri).ne.ZONE_PLASMA) ierr=1
    endif
@@ -906,17 +907,10 @@ subroutine fdot(x, v, w, dxdt, dvdt, dwdt, dEpdt, itri, ierr)
    !Calculate time derivatives
    call getBcylprime(x, elfieldcoefs(itri), geomterms, B0_cyl, deltaB, &
         dB0dR, dB0dphi, dB0dz, dB1dR, dB1dphi, dB1dz)
-   if (linear_particle .eq. 1) then
-      B_cyl = B0_cyl
-      dBdR = dB0dR
-      dBdphi = dB0dphi
-      dBdz = dB0dz
-   else
-      B_cyl = B0_cyl + deltaB
-      dBdR = dB0dR + dB1dR
-      dBdphi = dB0dphi + dB1dphi
-      dBdz = dB0dz + dB1dz
-   endif
+   B_cyl = B0_cyl + deltaB
+   dBdR = dB0dR + dB1dR
+   dBdphi = dB0dphi + dB1dphi
+   dBdz = dB0dz + dB1dz
    !call getBcyl(x, elfieldcoefs(itri), geomterms, B_cyl, deltaB, gradB0, gradB1, dB1)
    !write(0,*) B_cyl(1), B_cyl(1), B_cyl(2)
    B0inv = 1.0/sqrt(dot_product(B0_cyl, B0_cyl))  !1/magnitude of B

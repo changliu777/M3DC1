@@ -2741,7 +2741,7 @@ subroutine flux_nolin(trialx, r4term)
   if(use_external_fields .and. (eqsubtract.eq.1 .or. icsubtract.eq.1)) then 
      ! JxB
      ! ~~~
-     if(db.ne.0.) then
+     if(db.ne.0. .and. itwofluid.eq.1) then
         r4term = r4term + db*dt* &
              (b1psipsid(trialx,psx79,ps079,ni79) &
              +b1psibd1 (trialx,psx79,bz079,ni79) &
@@ -3416,7 +3416,7 @@ subroutine axial_field_nolin(trialx, r4term)
 
      ! JxB
      ! ~~~
-     if(db.ne.0.) then
+     if(db.ne.0. .and. itwofluid.eq.1) then
         r4term = r4term + db*dt* &
              (b2psipsid(trialx,ps079,psx79,ni79) &
              +b2psibd  (trialx,ps079,bzx79,ni79) &

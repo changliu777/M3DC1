@@ -1467,7 +1467,7 @@ endif
   if(myrank.eq.0 .and. iprint.ge.2) print *, '  solving...'
 
   call newvar_solve(b1vecini_vec%vec,mass_mat_lhs)
-  !call mult(b1vecini_vec, 0.5)
+  !call mult(b1vecini_vec, 1.1)
 
   p_field(0) = b1vecini_vec
 

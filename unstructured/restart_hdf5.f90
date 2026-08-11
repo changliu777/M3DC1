@@ -464,8 +464,8 @@ contains
     call h5r_read_field(group_id, "ti",  ti_field(ilin),  nelms, error)
 
 #ifdef USEPARTICLES
-    call h5r_read_field(group_id, "rhof", rho_field, nelms, error)
     if ((kinetic.eq.1).or.(irunaway_kinetic.eq.1)) then
+       call h5r_read_field(group_id, "rhof", rho_field, nelms, error)
        call h5r_read_field(group_id, "p_f_par",  p_f_par(ilin), nelms, error)
        call h5r_read_field(group_id, "p_f_perp", p_f_perp(ilin), nelms, error)
        call h5r_read_field(group_id, "denf", denf_field(ilin), nelms, error)

@@ -185,20 +185,20 @@ subroutine init_perturbations
      ph179 = 0.
 
      ! Original random perturbation:
-     !#ifdef USEST
-     !if(igeometry.eq.1) then
-     !   call init_random(xl_79, phi_79, zl_79, ph179(:,OP_1))
-     !else
-     !   call init_random(x_79-xmag, phi_79, z_79, ph179(:,OP_1))
-     !endif
-     !#else
-     !call init_random(x_79-xmag, phi_79, z_79, ph179(:,OP_1))
-     !#endif
+#ifdef USEST
+     if(igeometry.eq.1) then
+        call init_random(xl_79, phi_79, zl_79, ph179(:,OP_1))
+     else
+        call init_random(x_79-xmag, phi_79, z_79, ph179(:,OP_1))
+     endif
+#else
+     call init_random(x_79-xmag, phi_79, z_79, ph179(:,OP_1))
+#endif
 
-     radial_offset = x_79 - axis_r
-     minor_radius_sq = radial_offset**2 + (z_79-axis_z)**2
-     ph179(:,OP_1) = eps*exp(-0.5*minor_radius_sq/phi_gaussian_sigma**2) &
-          *tanh(radial_offset/phi_tanh_width)
+     !radial_offset = x_79 - axis_r
+     !minor_radius_sq = radial_offset**2 + (z_79-axis_z)**2
+     !ph179(:,OP_1) = eps*exp(-0.5*minor_radius_sq/phi_gaussian_sigma**2) &
+     !     *tanh(radial_offset/phi_tanh_width)
 
      ph179(:,OP_1) = ph179(:,OP_1) + r_79*verzero
 

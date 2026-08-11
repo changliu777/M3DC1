@@ -362,6 +362,12 @@ subroutine particle_test
       call add(p_field(0), p_i_perp(0), -2./3.)
    endif
 
+   pe_field(0) = p_field(0)
+   call mult(pe_field(0), pefac)
+   call calculate_temperatures(0, te_field(0), ti_field(0), &
+      pe_field(0), p_field(0), ne_field(0), den_field(0), &
+      1)
+
    call MPI_Barrier(MPI_COMM_WORLD, ierr)
 end subroutine particle_test
 

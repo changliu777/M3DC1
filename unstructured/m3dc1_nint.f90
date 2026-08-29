@@ -1849,10 +1849,8 @@ contains
            chstar079=0.
         endif
 
-       if ((ieqsub.eq.1).and. &
-            ((particle_couple.eq.0).or.(particle_couple.eq.1)).and. &
-            ((particle_couple.eq.1).or.(kinetic_fast_ion.eq.1).or. &
-            (irunaway_kinetic.eq.1))) then
+       if ((ieqsub.eq.1).and.(particle_couple.ne.-1).and. &
+            ((kinetic.eq.1).or.(irunaway_kinetic.eq.1))) then
         b0raw = 0.
         b1raw = 0.
         db0raw = 0.

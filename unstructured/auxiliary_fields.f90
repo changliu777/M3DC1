@@ -752,7 +752,7 @@ subroutine calculate_auxiliary_fields(ilin)
   ! EM Torque density
   do itri=1,numelms
      call define_element_quadrature(itri, int_pts_aux, 5)
-     call define_fields(itri, def_fields, 1, 0)
+     call define_fields(itri, def_fields, 1, 0, 1)
 
      call get_zone(itri, izone)
 

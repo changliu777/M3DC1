@@ -300,7 +300,7 @@ module basic
   integer :: ra_cyc      ! runaway subcycle
   real :: radiff         ! runaway diffusion
   real :: rjra           ! jra/j0
-  real :: bzsign
+  real :: bzsign       ! sign of equilibrium J_phi * B_phi
   integer :: ra_characteristics           ! use method of characteristics
   integer :: irunaway_kinetic             ! couple runaway electron parallel/perp pressure
   integer :: kinetic_current              ! use fast-particle parallel current in Ohm law

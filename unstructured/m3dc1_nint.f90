@@ -1799,16 +1799,6 @@ contains
            jfpar79 = 0.
         endif
 
-        if (kinetic.eq.1 .and. &
-             ((iand(fields, FIELD_PE).eq.FIELD_PE) .or. &
-              (iand(fields, FIELD_P).eq.FIELD_P))) then
-           if (ieqsub.eq.0) then
-              pt79 = pt79 + pfpar79/3. + 2.*pfper79/3.
-           else if (ieqsub.eq.1) then
-              pt79 = pt79 + pfpar079/3. + 2.*pfper079/3.
-           endif
-        endif
-
         if (kinetic_thermal_ion.eq.1) then
            call eval_ops(itri, p_i_par(1), pipar79, rfac)
            call eval_ops(itri, p_i_perp(1), piper79, rfac)
@@ -1827,6 +1817,20 @@ contains
            deni79 = 0.
            deni079 = 0.
            vipar79 = 0.
+        endif
+
+        if (kinetic.eq.1 .and. &
+             ((iand(fields, FIELD_PE).eq.FIELD_PE) .or. &
+              (iand(fields, FIELD_P).eq.FIELD_P))) then
+           if (ieqsub.eq.0) then
+              pt79 = pt79 + pfpar79/3. + 2.*pfper79/3.
+              if (particle_couple.ge.0 .and. kinetic_thermal_ion.eq.1) &
+                   pt79 = pt79 + pipar79/3. + 2.*piper79/3.
+           else if (ieqsub.eq.1) then
+              pt79 = pt79 + pfpar079/3. + 2.*pfper079/3.
+              if (particle_couple.ge.0 .and. kinetic_thermal_ion.eq.1) &
+                   pt79 = pt79 + pipar079/3. + 2.*piper079/3.
+           endif
         endif
         call eval_ops(itri, rho_field, rhof79, rfac)
            !pipar79 = 0.

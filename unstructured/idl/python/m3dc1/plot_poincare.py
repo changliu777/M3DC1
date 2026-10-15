@@ -14,6 +14,7 @@ from .plot_lcfs import plot_lcfs
 from .plot_mesh import plot_mesh
 from .plot_wall_regions import plot_wall_regions
 from .read_poincare import PoincareResult, read_poincare
+from .read_parameter import read_parameter
 
 
 def _find_trace_executable(trace_executable: str | Path | None) -> str:
@@ -44,8 +45,6 @@ def run_trace(
     steps_per_transit: int = 100,
     angle: float = 0.0,
     phi0: float = 0.0,
-    nplanes: int = 1,
-    tavg: int = 1,
     field_scale: float = 1.0,
     field_phase: float = 0.0,
     reverse: bool = False,
@@ -62,7 +61,10 @@ def run_trace(
     if not field_file.is_file():
         raise FileNotFoundError(f"M3D-C1 field file does not exist: {field_file}")
 
-    command = [executable, "-m3dc1", str(field_file), "-1"]
+    eqsubtract = int(read_parameter("eqsubtract", filename=field_file))
+    command = [executable]
+    if eqsubtract != 0:
+        command.extend(["-m3dc1", str(field_file), "-1"])
     if int(timeslice) >= 0:
         command.extend(
             [
@@ -73,6 +75,8 @@ def run_trace(
                 str(float(field_phase)),
             ]
         )
+    elif eqsubtract == 0:
+        raise ValueError("eqsubtract=0 requires a nonnegative Poincare timeslice.")
     command.extend(
         [
             "-dR",
@@ -89,10 +93,6 @@ def run_trace(
             str(float(angle)),
             "-phi0",
             str(float(phi0)),
-            "-n",
-            str(int(nplanes)),
-            "-tavg",
-            str(int(tavg)),
         ]
     )
     if dR0 is not None:
@@ -159,8 +159,6 @@ def plot_poincare(
     trace_steps_per_transit: int = 100,
     trace_angle: float = 0.0,
     trace_phi0: float = 0.0,
-    trace_nplanes: int = 1,
-    trace_tavg: int = 1,
     trace_field_scale: float = 1.0,
     trace_field_phase: float = 0.0,
     trace_reverse: bool = False,
@@ -209,8 +207,6 @@ def plot_poincare(
                 steps_per_transit=trace_steps_per_transit,
                 angle=trace_angle,
                 phi0=trace_phi0,
-                nplanes=trace_nplanes,
-                tavg=trace_tavg,
                 field_scale=trace_field_scale,
                 field_phase=trace_field_phase,
                 reverse=trace_reverse,

@@ -214,7 +214,8 @@ subroutine onestep
 #ifdef USEPARTICLES
  if(kinetic.eq.0) then
     if (nplanes.gt.1) call filter_fields
-    call set_parallel_velocity
+    ! Split steps already corrected velocity before density and pressure.
+    if(isplitstep.eq.0) call set_parallel_velocity
  endif
 #endif
 

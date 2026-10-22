@@ -13,7 +13,16 @@
 macro(petscLibCheck libs isRequired)
   foreach(lib ${libs}) 
     unset(petsclib CACHE)
-    find_library(petsclib "${lib}" PATHS ${PETSC_LIB_DIR})
+    unset(petsclib)
+    if(lib STREQUAL "petsc" AND PETSC_LIBRARY)
+      # Honor an explicit scalar-type-specific PETSc library.
+      if(NOT EXISTS "${PETSC_LIBRARY}")
+        message(FATAL_ERROR "PETSc library not found: ${PETSC_LIBRARY}")
+      endif()
+      set(petsclib "${PETSC_LIBRARY}")
+    else()
+      find_library(petsclib "${lib}" PATHS ${PETSC_LIB_DIR})
+    endif()
     if(petsclib MATCHES "^petsclib-NOTFOUND$")
       if(${isRequired})
         message(FATAL_ERROR "PETSC library ${lib} not found in ${PETSC_LIB_DIR}")
@@ -74,8 +83,8 @@ find_package_handle_standard_args(PETSC  DEFAULT_MSG
 mark_as_advanced(PETSC_INCLUDE_DIR PETSC_LIBS)
 
 set(PETSC_LINK_LIBS "")
-foreach(lib ${PETSC_LIB_NAMES})
-  set(PETSC_LINK_LIBS "${PETSC_LINK_LIBS} -l${lib}")
+foreach(lib ${PETSC_LIBS})
+  set(PETSC_LINK_LIBS "${PETSC_LINK_LIBS} ${lib}")
 endforeach()
 
 #pkgconfig  

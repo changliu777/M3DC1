@@ -360,10 +360,27 @@ subroutine particle_test
    if ((irestart.eq.0).and.(ntime.eq.0).and.(kinetic.eq.1) &
         .and.(particle_couple.ge.0) &
         .and.(kinetic_thermal_ion.eq.1)) then
+      ! Full-f moments use a different smoothing matrix from the equilibrium
+      ! reference. Subtract the same pressure that enters the full-field solve.
+      if(ifullf.eq.1) then
+         p_i_par(0) = p_i_par(1)
+         p_i_perp(0) = p_i_perp(1)
+      endif
       call add(p_field(0), p_i_par(0), -1./3.)
       call add(p_field(0), p_i_perp(0), -2./3.)
    endif
 
+   ! Keep the MHD pressure split while constructing the initial equilibrium
+   ! and loading particles. After subtracting kinetic ion pressure above,
+   ! all remaining fluid pressure belongs to electrons, also on restart.
+   kinetic_thermal_pressure = kinetic.eq.1 .and. kinetic_thermal_ion.eq.1 &
+        .and. particle_couple.ge.0
+   if(kinetic_thermal_pressure) then
+      pefac = 1.
+      pe_field(1) = p_field(1)
+      if(myrank.eq.0 .and. iprint.ge.1) &
+           print *, 'Kinetic thermal ions: Pe=P; ion pressure comes from kinetic moments'
+   endif
    pe_field(0) = p_field(0)
    call mult(pe_field(0), pefac)
    call calculate_temperatures(0, te_field(0), ti_field(0), &
@@ -2262,6 +2279,7 @@ subroutine update_particle_pressure(full_update)
       write (0, '(A,f9.2,A)') 'Pressure tensor LHS vecs calculated in', tend - tstart, ' sec.'
    end if
 end subroutine update_particle_pressure
+
 !---------------------------------------------------------------------------
 subroutine finalize_particles
    use arrays
@@ -2832,12 +2850,12 @@ subroutine get_field_coefs(eq, full_update)
          !call calcavector(ielm, den_field(1), elfieldcoefs(ielm_global)%ne)
          call calcavector(ielm, te_field(1), elfieldcoefs(ielm_global)%te)
          elfieldcoefs(ielm_global)%pe=elfieldcoefs(ielm_global)%pe*factor
-         elfieldcoefs(ielm_global)%te=elfieldcoefs(ielm_global)%te*2.0*factor
+         elfieldcoefs(ielm_global)%te=elfieldcoefs(ielm_global)%te*factor
          if (eq==1) then
             call calcavector(ielm, p_field(0), elfieldcoefs(ielm_global)%pe0)
             elfieldcoefs(ielm_global)%pe0=elfieldcoefs(ielm_global)%pe0*factor
             call calcavector(ielm, te_field(0), elfieldcoefs(ielm_global)%te0)
-            elfieldcoefs(ielm_global)%te0=elfieldcoefs(ielm_global)%te0*2.0*factor
+            elfieldcoefs(ielm_global)%te0=elfieldcoefs(ielm_global)%te0*factor
             call calcavector(ielm, den_field(0), elfieldcoefs(ielm_global)%ne0)
          endif
       endif

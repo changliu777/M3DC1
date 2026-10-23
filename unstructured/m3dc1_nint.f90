@@ -941,6 +941,25 @@ contains
        pi179 = p179 - pe179
        pi079 = p079 - pe079
        pit79 = pt79 - pet79
+#ifdef USEPARTICLES
+       if(kinetic_thermal_pressure) then
+          if(ilin.eq.0) then
+             call eval_ops(itri, p_i_par(1), pipar79, rfac)
+             call eval_ops(itri, p_i_perp(1), piper79, rfac)
+             pi179 = (pipar79 + 2.*piper79)/3.
+          else
+             pi179 = 0.
+          endif
+          if(ieqsub.eq.1) then
+             call eval_ops(itri, p_i_par(0), pipar079)
+             call eval_ops(itri, p_i_perp(0), piper079)
+             pi079 = (pipar079 + 2.*piper079)/3.
+          else
+             pi079 = 0.
+          endif
+          pit79 = pi079 + pi179
+       endif
+#endif
 
        p_floor = iset_pe_floor*pe_floor + iset_pi_floor*pi_floor
 

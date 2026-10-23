@@ -768,6 +768,8 @@ subroutine export_time_advance_vectors_split
 
   endif   ! on ipressplit.eq.0
 
+  if(kinetic_thermal_pressure) pe_field(1) = p_field(1)
+
   if(idens.eq.1) then
      ne_field(1) = ne_v
      den_field(1) = den_v

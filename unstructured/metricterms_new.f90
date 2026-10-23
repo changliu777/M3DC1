@@ -7574,6 +7574,7 @@ function b1psi2bfpe(e,f,g,h,i,j)
   b1psi2bfpe = temp
 end function b1psi2bfpe
 
+#ifdef USEPARTICLES
 function b1psi2bfn(e,f,g,h,i,j)
   use basic
   use m3dc1_nint
@@ -7591,8 +7592,14 @@ function b1psi2bfn(e,f,g,h,i,j)
   temp79a = temp79a - (j(:,OP_DR)*i(:,OP_DR) + j(:,OP_DZ)*i(:,OP_DZ))   &
                     + ri2_79*h(:,OP_1)*j(:,OP_DP)
 #endif
-  temp79a = temp79a*b2i79(:,OP_1)*ri2_79*ni79(:,OP_1) &
-                  *2.0*te079(:,OP_1)
+  temp79a = temp79a*b2i79(:,OP_1)*ri2_79*ni79(:,OP_1)
+  ! Retain the equilibrium-temperature closure for perturbation equations.
+  ! Full-field equations have no te079 contribution; use their total Te.
+  if(eqsubtract.eq.1) then
+     temp79a = temp79a*te079(:,OP_1)
+  else
+     temp79a = temp79a*tet79(:,OP_1)
+  endif
 
 
   if(jadv.eq.0) then
@@ -7610,6 +7617,7 @@ function b1psi2bfn(e,f,g,h,i,j)
 
   b1psi2bfn = temp
 end function b1psi2bfn
+#endif
 
 
 
@@ -8460,6 +8468,7 @@ function b2psi2bfpe(e,f,g,h,i,j)
   b2psi2bfpe = temp
 end function b2psi2bfpe
 
+#ifdef USEPARTICLES
 function b2psi2bfn(e,f,g,h,i,j)
   use basic
   use m3dc1_nint
@@ -8477,7 +8486,13 @@ function b2psi2bfn(e,f,g,h,i,j)
   temp79a = temp79a - (j(:,OP_DR)*i(:,OP_DR) + j(:,OP_DZ)*i(:,OP_DZ))   &
                     + ri2_79*h(:,OP_1)*j(:,OP_DP)
 #endif
-  temp79a = temp79a*b2i79(:,OP_1)*ni79(:,OP_1)*2.0*te079(:,OP_1)
+  temp79a = temp79a*b2i79(:,OP_1)*ni79(:,OP_1)
+  ! Match the temperature closure used by b1psi2bfn.
+  if(eqsubtract.eq.1) then
+     temp79a = temp79a*te079(:,OP_1)
+  else
+     temp79a = temp79a*tet79(:,OP_1)
+  endif
 
 
   temp = intx4(e(:,:,OP_DR),ri2_79,temp79a,g(:,OP_DR))    &
@@ -8489,6 +8504,7 @@ function b2psi2bfn(e,f,g,h,i,j)
 
   b2psi2bfn = temp
 end function b2psi2bfn
+#endif
 !=============================================================================
 ! B3 TERMS
 !=============================================================================

@@ -488,8 +488,10 @@ module basic
 
   real :: beta
   real :: pefac
+#ifdef USEPARTICLES
   ! Activated after particle loading: P then contains only fluid electrons.
   logical :: kinetic_thermal_pressure = .false.
+#endif
 
   ! complex options
   integer :: ntor     ! toroidal mode number

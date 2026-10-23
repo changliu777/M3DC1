@@ -768,7 +768,9 @@ subroutine export_time_advance_vectors_split
 
   endif   ! on ipressplit.eq.0
 
+#ifdef USEPARTICLES
   if(kinetic_thermal_pressure) pe_field(1) = p_field(1)
+#endif
 
   if(idens.eq.1) then
      ne_field(1) = ne_v

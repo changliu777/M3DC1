@@ -11,7 +11,7 @@ def chunklist(string, length):
 
 def readg(fname):
   f = open(fname, 'r')
-  
+
   g={}
   data_order=['fpol','pres','ffprim','pprim','psirz','qpsi','nblm','rzbbbs','rzlim']
   j=0
@@ -19,7 +19,7 @@ def readg(fname):
   l=0
 
   for i, line in enumerate(f):
-    
+
     if i==0:
       header = line.split()
       g['header']=header
@@ -52,7 +52,7 @@ def readg(fname):
 
       g['rgrid']=np.linspace(rleft, rleft+rdim, nw)
       g['zgrid']=np.linspace(-zdim/2, zdim/2, nh)
-     
+
     elif i==2:
       list_of_chunks=chunklist(line, 16)
       g['rmaxis']=float(list_of_chunks[0])
@@ -74,9 +74,9 @@ def readg(fname):
       g['sibry']=float(list_of_chunks[2])
       g['xdum']=float(list_of_chunks[3])
       g['xdum']=float(list_of_chunks[4])
-         
+
  # rmaxis=g(1);zmaxis=g(2);simag=g(3);sibry=g(4);bcentr=g(5);
-       
+
     else:
       for chunk in chunklist(line, 16):
         if l<len(data_order):
@@ -139,8 +139,3 @@ if __name__ == '__main__':
   print("file:", sys.argv[1])
   g = readg(sys.argv[1])
   # then we do something with g, like plot parts like readg.m
-  
-    
-
-
-

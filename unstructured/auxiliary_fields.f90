@@ -286,8 +286,10 @@ endif
 
      ! Total pressure is ion pressure plus electron pressure
      temp79a = temp79a + temp79b
+#ifdef USEPARTICLES
      ! In the hybrid model kinetic moments carry the ion pressure separately.
      if(kinetic_thermal_pressure) temp79a = temp79b
+#endif
 
 
      ! If eqsubtract = 1, subtract the equilibrium pressure
@@ -454,7 +456,11 @@ endif
         call eval_ops(itri, te_field(0), te079, rfac)
         temp79a = temp79a - te079(:,OP_1)
 
+#ifdef USEPARTICLES
         if(kinetic_thermal_pressure .or. (ipressplit.eq.1 .and. ipres.eq.1)) then
+#else
+        if(ipressplit.eq.1 .and. ipres.eq.1) then
+#endif
            call eval_ops(itri, ti_field(0), ti079, rfac)
            temp79b = temp79b - ti079(:,OP_1)
         end if
